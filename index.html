@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema de Venta de Pasajes - Embarcaciones</title>
+    <link rel="stylesheet" href="./styles/main.css">
+    <link rel="stylesheet" href="./styles/icons.css">
+
+    <script src="https://www.gstatic.com/firebasejs/ui/6.0.1/firebase-ui-auth.js"></script>
+    <link type="text/css" rel="stylesheet" href="https://www.gstatic.com/firebasejs/ui/6.0.1/firebase-ui-auth.css" />
+
+</head>
+<body>
+    <!-- PANTALLA DE LOGIN -->
+    <div class="login-screen" id="loginScreen">
+        <div class="login-container">
+            <div class="login-header">
+                <h1>Bienvenido</h1>
+                <p>Embarcaciones de Guatapé</p>
+            </div>
+
+            <form id="loginForm">
+                <div class="form-group">
+                    <label for="email">Correo Electrónico</label>
+                    <div class="input-container">
+                        <input 
+                            type="email" 
+                            id="email" 
+                            name="email" 
+                            placeholder="tu@email.com" 
+                            required
+                            autocomplete="email"
+                        >
+                        <span class="input-icon">📧</span>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="password">Contraseña</label>
+                    <div class="input-container">
+                        <input 
+                            type="password" 
+                            id="password" 
+                            name="password" 
+                            placeholder="Tu contraseña" 
+                            required
+                            autocomplete="current-password"
+                            minlength="6"
+                        >
+                        <span class="input-icon" id="togglePassword" onclick="togglePassword()">👁️</span>
+                    </div>
+                </div>
+
+                <div class="error-message" id="errorMessage">
+                    Error de autenticación
+                </div>
+
+                <button type="submit" class="login-btn" id="loginBtn">
+                    <span class="loading-spinner" id="loadingSpinner"></span>
+                    <span id="btnText">Iniciar Sesión</span>
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- SISTEMA PRINCIPAL -->
+    <div class="main-system" id="mainSystem">
+        <div class="header">
+            <h1>Embarcaciones de Guatapé</h1>
+            <p>Sistema de Venta de Pasajes</p>
+            <div class="user-info">
+                <span id="userEmail">usuario@email.com</span>
+                <button class="logout-btn" onclick="handleLogout()"><img src="./fonts/icons/exit.svg" alt="" class="icons"> Cerrar Sesión</button>
+            </div>
+        </div>
+
+        <div class="main-container">
+            <div class="booking-form">
+                <div class="form-sections-container">
+
+                    <!-- SEGUNDO: Información del Pasajero -->
+                    <div class="form-section">
+                        <h3><object class="icono-svg" type="image/svg+xml" data="./fonts/icons/user.svg"></object>Información del Pasajero</h3>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="nombre">Nombre Completo</label>
+                                <input type="text" id="nombre" placeholder="Ej: Juan Pérez García" oninput="updateTicket()" autocomplete="off">
+                            </div>
+                            <div class="form-group">
+                                <label for="documento">Documento</label>
+                                <input type="text" id="documento" placeholder="12345678" oninput="updateTicket()" autocomplete="off">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-section">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="telefono">Teléfono</label>
+                                <input type="tel" id="telefono" placeholder="+57 300 123 4567" oninput="updateTicket()" autocomplete="off">
+                            </div>
+                            <div class="form-group">
+                                <label for="emailCliente">Email</label>
+                                <input type="email" id="emailCliente" placeholder="ejemplo@email.com" oninput="updateTicket()" autocomplete="off">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- TERCERO: Detalles del Viaje -->
+                    <div class="form-section">
+                        <div class="detalle-viaje">
+                            <div class="form-group">
+                                    <label for="fecha">Fecha de Viaje</label>
+                                    <input type="date" id="fecha" onchange="updateTicket()">
+                            </div>
+                            <div class="form-group">
+                                <label for="hora">Hora</label>
+                                <select id="hora" onchange="updateTicket()">
+                                    <option value="">Seleccionar hora</option>
+                                    <option value="08:00">08:00 AM</option>
+                                    <option value="09:30">09:30 AM</option>
+                                    <option value="11:00">11:00 AM</option>
+                                    <option value="12:30">12:30 PM</option>
+                                    <option value="14:00">02:00 PM</option>
+                                    <option value="15:30">03:30 PM</option>
+                                    <option value="17:00">05:00 PM</option>
+                                </select>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="adultos">Adultos</label>
+                                <div class="counter-group">
+                                    <input type="number" id="adultos" min="1" max="20" value="1" oninput="updateTicket()" readonly>
+                                    <div class="counter-buttons">
+                                        <button type="button" class="counter-btn" onclick="incrementCounter('adultos')">+</button>
+                                        <button type="button" class="counter-btn" onclick="decrementCounter('adultos')">-</button>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label for="ninos">Niños (2-12 años)</label>
+                                <div class="counter-group">
+                                    <input type="number" id="ninos" min="0" max="10" value="0" oninput="updateTicket()" readonly>
+                                    <div class="counter-buttons">
+                                        <button type="button" class="counter-btn" onclick="incrementCounter('ninos')">+</button>
+                                        <button type="button" class="counter-btn" onclick="decrementCounter('ninos')">-</button>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="formulario">
+                                <label for="reservationSwitch">Reserva</label>
+                                <div class="service-toggle">
+                                    <label class="switch">
+                                        <input type="checkbox" id="reservationSwitch" onchange="toggleReservation()">
+                                        <span class="slider round"></span>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+
+
+                <!-- PRIMERO: Tipo de Embarcación -->
+                <div class="form-section">
+                    <div class="vessel-grid">
+                        <div class="vessel-card" data-type="lancha" data-price="25000" onclick="selectVessel(this)">
+                            <div class="vessel-icon">
+                                <object class="icono-card" type="image/svg+xml" data="./fonts/icons/Taxi-blanco.svg"></object>
+                            </div>
+                            <div class="vessel-info">
+                                <div class="vessel-name">Lancha Taxi</div>
+                                <div class="vessel-price">$25,000</div>
+                            </div>
+                            <div class="vessel-selected">✓</div>
+                        </div>
+                        <div class="vessel-card" data-type="deportiva" data-price="35000" onclick="selectVessel(this)">
+                            <div class="vessel-icon">
+                                <object class="icono-card" type="image/svg+xml" data="./fonts/icons/sport-blanco.svg"></object>
+                            </div>
+                            <div class="vessel-info">
+                                <div class="vessel-name">Deportiva</div>
+                                <div class="vessel-price">$35,000</div>
+                            </div>
+                            <div class="vessel-selected">✓</div>
+                        </div>
+                        <div class="vessel-card" data-type="planchon" data-price="15000" onclick="selectVessel(this)">
+                            <div class="vessel-icon">
+                                <object class="icono-card" type="image/svg+xml" data="./fonts/icons/Planchon.svg"></object>
+                            </div>
+                            <div class="vessel-info">
+                                <div class="vessel-name">Planchón</div>
+                                <div class="vessel-price">$15,000</div>
+                            </div>
+                            <div class="vessel-selected">✓</div>
+                        </div>
+                        <div class="vessel-card" data-type="carguero" data-price="20000" onclick="selectVessel(this)">
+                            <div class="vessel-icon">
+                                <object class="icono-card" type="image/svg+xml" data="./fonts/icons/cargero-blanco.svg"></object>
+                            </div>
+                            <div class="vessel-info">
+                                <div class="vessel-name">Carguero</div>
+                                <div class="vessel-price">$20,000</div>
+                            </div>
+                            <div class="vessel-selected">✓</div>
+                        </div>
+                        <div class="vessel-card" data-type="barco" data-price="45000" onclick="selectVessel(this)">
+                            <div class="vessel-icon">
+                                <object class="icono-card" type="image/svg+xml" data="./fonts/icons/barco-blanco.svg"></object>
+                            </div>
+                            <div class="vessel-info">
+                                <div class="vessel-name">Barco</div>
+                                <div class="vessel-price">$45,000</div>
+                            </div>
+                            <div class="vessel-selected">✓</div>
+                        </div>
+                        <div class="vessel-card" data-type="yate" data-price="75000" onclick="selectVessel(this)">
+                            <div class="vessel-icon">
+                                <object class="icono-card" type="image/svg+xml" data="./fonts/icons/yate-blanco.svg"></object>
+                            </div>
+                            <div class="vessel-info">
+                                <div class="vessel-name">Yate</div>
+                                <div class="vessel-price">$75,000</div>
+                            </div>
+                            <div class="vessel-selected">✓</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="button-gen">
+                    <button id="mainActionBtn" class="action-btn generate" onclick="handleMainAction()">
+                        <span id="btnActionText">Generar Ticket</span>
+                    </button>
+                    <button id="mainActionBtn" class="action-btn generate" onclick="handleMainAction()">
+                        <span id="btnActionText">Generar Ticket</span>
+                    </button>
+                </div>
+                
+            </div>
+
+            <div class="ticket-preview" id="ticketPreview">
+                <div class="ticket-header">
+                    <div class="ticket-title"><object class="icono-svg" type="image/svg+xml" data="./fonts/icons/tikects.svg"></object> TICKET DE EMBARCACIÓN</div>
+                    <div class="ticket-subtitle">Embarcaciones de Guatapé - Embalse de Guatapé</div>
+                </div>
+
+                <div class="ticket-info">
+                    <div class="ticket-field">
+                        <span class="field-label">Empresa:</span>
+                        <span class="field-value">Nautica Guatapé S.A.S</span>
+                    </div>
+                    <div class="ticket-field">
+                        <span class="field-label">Tipo de Servicio:</span>
+                        <span class="field-value" id="ticket-tipo-servicio">Nuevo Pasaje</span>
+                    </div>
+                    <div class="ticket-field">
+                        <span class="field-label">Pasajero:</span>
+                        <span class="field-value" id="ticket-nombre">-</span>
+                    </div>
+                    <div class="ticket-field">
+                        <span class="field-label">Documento:</span>
+                        <span class="field-value" id="ticket-documento">-</span>
+                    </div>
+                    <div class="ticket-field">
+                        <span class="field-label">Fecha:</span>
+                        <span class="field-value" id="ticket-fecha">-</span>
+                    </div>
+                    <div class="ticket-field">
+                        <span class="field-label">Hora:</span>
+                        <span class="field-value" id="ticket-hora">-</span>
+                    </div>
+                    <div class="ticket-field">
+                        <span class="field-label">Embarcación:</span>
+                        <span class="field-value" id="ticket-embarcacion">-</span>
+                    </div>
+                    <div class="ticket-field full-width">
+                        <span class="field-label">Pasajeros:</span>
+                        <span class="field-value" id="ticket-pasajeros">-</span>
+                    </div>
+                </div>
+
+                <div class="ticket-total" id="ticketTotalSection">
+                    <div>TOTAL A PAGAR</div>
+                    <div class="total-amount" id="ticket-total">$0</div>
+                </div>
+
+                <div class="qr-code">
+                    <div id="qr-container">
+                        <div class="qr-placeholder">Generando QR...</div>
+                    </div>
+                    <div style="font-size: 0.8em;">Código: <span id="ticket-codigo">TKT-000000</span></div>
+                </div>
+
+                <div class="timestamp" id="ticket-timestamp">
+                    Generado: --
+                </div>
+            </div>
+        </div>
+    </div>
+    <script src="./js/alerts.js"></script>
+    <script src="./js/firebase-auth.js"></script>
+    <script src="./js/thermal-printer.js"></script>
+    <script src="./js/pdf-generator.js"></script>
+    <script src="./js/app.js"></script>
+
+
+</body>
+</html>
