@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no" ?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" width="1080" height="500" viewBox="0 0 1080 500" xml:space="preserve">
+<desc>Created with Fabric.js 5.2.4</desc>
+<defs>
+</defs>
+<g transform="matrix(1 0 0 1 540 250)" id="e062e423-c559-44b5-a7d3-3f5c03ecf79e"  >
+<rect style="stroke: none; stroke-width: 1; stroke-dasharray: none; stroke-linecap: butt; stroke-dashoffset: 0; stroke-linejoin: miter; stroke-miterlimit: 4; fill: rgb(255,255,255); fill-rule: nonzero; opacity: 1; visibility: hidden;" vector-effect="non-scaling-stroke"  x="-540" y="-250" rx="0" ry="0" width="1080" height="500" />
+</g>
+<g transform="matrix(Infinity NaN NaN Infinity 0 0)" id="f07d2be1-a38b-408b-a263-a41e935c321a"  >
+</g>
+<g transform="matrix(-0.2 0 0 -0.2 540 250)" id="90f3becf-5a2f-4d7d-bea6-a86f167808dd"  >
+<path style="stroke: rgb(0,0,0); stroke-width: 0; stroke-dasharray: none; stroke-linecap: butt; stroke-dashoffset: 0; stroke-linejoin: miter; stroke-miterlimit: 4; fill: rgb(255,255,255); fill-rule: nonzero; opacity: 1;" vector-effect="non-scaling-stroke"  transform=" translate(-2559.11, -2555)" d="M 1065 3298 L 1273 3095 L 1059 3090 L 845 3085 L 883 3048 C 953 2979 1093 2949 1375 2944 C 1483 2943 1579 2936 1595 2930 C 1692 2893 1807 2754 1849 2622 C 1880 2528 1876 2441 1839 2404 L 1814 2380 L 1220 2377 C 684 2375 621 2373 587 2358 C 496 2317 381 2157 284 1938 L 237 1830 L 119 1830 L 0 1830 L 0 1770 L 0 1710 L 96 1710 C 191 1710 192 1710 186 1688 C 182 1675 177 1653 174 1638 L 168 1610 L 2156 1610 L 4144 1610 L 4259 1682 C 4712 1962 5025 2213 5096 2352 C 5150 2458 5109 2504 4935 2531 C 4897 2537 4684 2544 4462 2547 L 4059 2553 L 3762 2821 L 3465 3090 L 2487 3090 L 1509 3090 L 1242 3284 C 990 3467 934 3500 876 3500 C 863 3500 926 3432 1065 3298 z M 2475 2898 C 2472 2885 2456 2828 2441 2770 L 2413 2665 L 2241 2662 L 2070 2660 L 2070 2712 C 2070 2807 2122 2877 2214 2906 C 2237 2913 2306 2919 2368 2919 C 2480 2920 2480 2920 2475 2898 z M 2846 2903 C 2843 2893 2834 2859 2826 2828 C 2817 2796 2803 2745 2795 2715 L 2779 2660 L 2629 2660 C 2491 2660 2479 2661 2484 2678 C 2487 2687 2496 2721 2504 2753 C 2513 2784 2527 2835 2535 2865 L 2551 2920 L 2701 2920 C 2839 2920 2851 2919 2846 2903 z M 3180 2913 C 3180 2908 3166 2850 3149 2783 L 3117 2660 L 2992 2660 C 2879 2660 2868 2662 2872 2678 C 2875 2687 2890 2746 2906 2808 L 2935 2920 L 3057 2920 C 3125 2920 3180 2917 3180 2913 z M 3511 2793 L 3663 2665 L 3430 2662 C 3302 2661 3195 2662 3192 2665 C 3189 2667 3202 2726 3220 2795 L 3253 2920 L 3306 2920 L 3360 2920 L 3511 2793 z" stroke-linecap="round" />
+</g>
+</svg>
