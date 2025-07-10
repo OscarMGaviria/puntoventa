@@ -1,0 +1,33 @@
+# ===========================
+# DEPENDENCIAS PARA SISTEMA POS CON IMPRESIÓN DIRECTA
+# Embarcaciones de Guatapé
+# ===========================
+
+# Interfaz web
+pywebview>=4.0.0
+
+# Impresión directa (Windows)
+pywin32>=306
+pypiwin32>=223
+
+# Procesamiento de imágenes
+Pillow>=10.0.0
+pillow-heif>=0.13.0
+
+# Códigos QR
+qrcode[pil]>=7.4.2
+
+# Utilidades adicionales
+pathlib2>=2.3.7
+requests>=2.31.0
+
+# ===========================
+# INSTALACIÓN:
+# pip install -r requirements.txt
+# ===========================
+
+# NOTAS:
+# - pywin32 es específico para Windows
+# - Para Linux/Mac se requiere implementación diferente
+# - pillow-heif es opcional para formatos HEIF/HEIC
+# - qrcode[pil] incluye dependencias de imagen

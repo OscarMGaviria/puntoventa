@@ -1,0 +1,736 @@
+/* ===========================
+           SISTEMA POS MODERNO MEJORADO
+           Embarcaciones de Guatapé
+           =========================== */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: "Inter", "Segoe UI", sans-serif;
+  background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+  min-height: 100vh;
+  color: #f8fafc;
+  overflow-x: hidden;
+}
+
+.counter-input::-webkit-outer-spin-button,
+.counter-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+
+
+
+
+.main-container {
+  display: grid;
+  grid-template-columns: 1fr 380px;
+  gap: 20px;
+  height: 100vh;
+  padding: 16px;
+  max-width: 1600px;
+  margin: 0 auto;
+}
+
+/* ===========================
+  PANEL PRINCIPAL (IZQUIERDA)
+=========================== */
+
+.pos-panel {
+  background: rgba(30, 41, 59, 0.95);
+  backdrop-filter: blur(20px);
+  border-radius: 20px;
+  padding: 24px;
+  border: 1px solid rgba(148, 163, 184, 0.15);
+  box-shadow: 0 20px 40px -12px rgba(0, 0, 0, 0.4);
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(148, 163, 184, 0.3) transparent;
+  max-height: calc(100vh - 32px);
+}
+
+.pos-panel::-webkit-scrollbar {
+  width: 6px;
+}
+
+.pos-panel::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.pos-panel::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.3);
+  border-radius: 3px;
+}
+
+.section {
+  margin-bottom: 24px;
+}
+
+.section-title {
+  color: #06b6d4;
+  font-size: 1.1rem;
+  font-weight: 700;
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  letter-spacing: -0.025em;
+}
+
+.section-title::before {
+  content: "";
+  width: 3px;
+  height: 20px;
+  background: linear-gradient(135deg, #06b6d4, #0891b2);
+  border-radius: 2px;
+}
+
+/* ===========================
+FORMULARIOS COMPACTOS
+=========================== */
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 12px;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: 1fr 130px 130px;
+  gap: 12px;
+}
+.passenger-info-grid {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr 1fr;
+  gap: 12px;
+}
+.form-group1 {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 130px;
+}
+
+.form-label {
+  color: #cbd5e1;
+  font-size: 0.8rem;
+  font-weight: 500;
+  letter-spacing: 0.025em;
+}
+
+.form-input {
+  background: rgba(51, 65, 85, 0.8);
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  border-radius: 10px;
+  padding: 10px 12px;
+  color: #f8fafc;
+  font-size: 0.9rem;
+  transition: all 0.3s ease;
+  backdrop-filter: blur(10px);
+  height: 40px;
+  width: 100%;
+}
+
+.form-input:focus {
+  outline: none;
+  border-color: #06b6d4;
+  box-shadow: 0 0 0 2px rgba(6, 182, 212, 0.1);
+  background: rgba(51, 65, 85, 0.9);
+}
+
+.form-input::placeholder {
+  color: #64748b;
+}
+
+/* ===========================
+           GRID DE EMBARCACIONES COMPACTO
+           =========================== */
+.vessel-grid {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 12px;
+}
+
+.vessel-card {
+  background: rgba(51, 65, 85, 0.7);
+  border: 2px solid rgba(148, 163, 184, 0.1);
+  border-radius: 12px;
+  padding: 2px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  position: relative;
+  backdrop-filter: blur(10px);
+  text-align: center;
+  aspect-ratio: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+.vessel-card:hover {
+  transform: translateY(-2px);
+  border-color: rgba(6, 182, 212, 0.3);
+  box-shadow: 0 15px 30px -8px rgba(6, 182, 212, 0.2);
+}
+
+.vessel-card.selected {
+  border-color: #06b6d4;
+  background: rgba(6, 182, 212, 0.15);
+  box-shadow: 0 0 25px rgba(6, 182, 212, 0.3);
+}
+
+.vessel-icon {
+  width: 32px;
+  height: 32px;
+  background: linear-gradient(135deg, #06b6d4, #0891b2);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  margin-bottom: 8px;
+  color: white;
+}
+
+.vessel-card.selected .vessel-icon {
+  background: linear-gradient(135deg, #0891b2, #0e7490);
+  box-shadow: 0 4px 15px rgba(6, 182, 212, 0.4);
+}
+
+.vessel-name {
+  color: #f8fafc;
+  font-weight: 600;
+  font-size: 0.8rem;
+  margin-bottom: 4px;
+}
+
+.vessel-price {
+  color: #06b6d4;
+  font-weight: 700;
+  font-size: 0.85rem;
+}
+
+.vessel-selected {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 18px;
+  height: 18px;
+  background: #10b981;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transform: scale(0);
+  transition: all 0.3s ease;
+  color: white;
+  font-size: 10px;
+}
+
+.vessel-card.selected .vessel-selected {
+  opacity: 1;
+  transform: scale(1);
+}
+
+/* ===========================
+           CONTADORES HORIZONTALES
+           =========================== */
+.passengers-section {
+  display: flex;
+  gap: 16px;
+  align-items: flex-end;
+}
+
+.counter-group {
+  display: flex;
+  align-items: center;
+  background: rgba(51, 65, 85, 0.8);
+  border-radius: 10px;
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  overflow: hidden;
+  height: 40px;
+}
+
+.counter-btn {
+  background: none;
+  border: none;
+  color: #06b6d4;
+  font-size: 14px;
+  font-weight: bold;
+  width: 32px;
+  height: 38px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.counter-btn:hover {
+  background: rgba(6, 182, 212, 0.1);
+}
+
+.counter-input {
+  background: none;
+  border: none;
+  color: #f8fafc;
+  text-align: center;
+  width: 50px;
+  height: 38px;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+/* ===========================
+           CONTROLES ESPECIALES COMPACTOS
+           =========================== */
+.special-controls {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  align-items: center;
+}
+
+.price-editor {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.price-editor input {
+  flex: 1;
+}
+
+.btn-reset {
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  border: none;
+  border-radius: 8px;
+  width: 36px;
+  height: 36px;
+  color: white;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+}
+
+.btn-reset:hover {
+  transform: scale(1.05);
+  box-shadow: 0 4px 15px rgba(245, 158, 11, 0.3);
+}
+
+.toggle-container {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.toggle-switch {
+  position: relative;
+  width: 48px;
+  height: 24px;
+  background: rgba(71, 85, 105, 0.8);
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.toggle-switch.active {
+  background: linear-gradient(135deg, #06b6d4, #0891b2);
+}
+
+.toggle-slider {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 20px;
+  height: 20px;
+  background: white;
+  border-radius: 50%;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+}
+
+.toggle-switch.active .toggle-slider {
+  transform: translateX(24px);
+}
+
+.toggle-label {
+  color: #cbd5e1;
+  font-size: 0.8rem;
+  font-weight: 500;
+}
+
+/* ===========================
+           BOTONES DE ACCIÓN COMPACTOS
+           =========================== */
+.action-buttons {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid rgba(148, 163, 184, 0.1);
+}
+
+.action-btn {
+  background: linear-gradient(135deg, #06b6d4, #0891b2);
+  border: none;
+  border-radius: 10px;
+  padding: 12px 16px;
+  color: white;
+  font-weight: 600;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  height: 44px;
+}
+
+.action-btn:hover:not(.disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 25px rgba(6, 182, 212, 0.3);
+}
+
+.action-btn.generate {
+  background: linear-gradient(135deg, #3b82f6, #2563eb);
+}
+
+.action-btn.print {
+  background: linear-gradient(135deg, #10b981, #059669);
+}
+
+.action-btn.cancel {
+  background: linear-gradient(135deg, #ef4444, #dc2626);
+}
+
+.action-btn.new {
+  background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+}
+
+.action-btn.disabled {
+  background: rgba(71, 85, 105, 0.6);
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+/* ===========================
+           PANEL DE TICKET COMPACTO (DERECHA)
+           =========================== */
+.ticket-panel {
+  background: rgba(248, 250, 252, 0.98);
+  border-radius: 20px;
+  padding: 20px;
+  color: #1e293b;
+  box-shadow: 0 20px 40px -12px rgba(0, 0, 0, 0.25);
+  border: 1px solid rgba(226, 232, 240, 0.8);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  max-height: calc(100vh - 32px);
+}
+
+.ticket-header {
+  text-align: center;
+  padding-bottom: 16px;
+  margin-bottom: 16px;
+  border-bottom: 2px dashed #cbd5e1;
+}
+
+.ticket-title {
+  font-size: 1.2rem;
+  font-weight: 800;
+  color: #0f172a;
+  margin-bottom: 6px;
+  letter-spacing: -0.025em;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.ticket-subtitle {
+  color: #64748b;
+  font-size: 0.8rem;
+  margin-bottom: 12px;
+}
+
+.ticket-status {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 16px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  background: rgba(59, 130, 246, 0.1);
+  color: #3b82f6;
+  border: 1px solid rgba(59, 130, 246, 0.2);
+}
+
+.ticket-status.generated {
+  background: rgba(16, 185, 129, 0.1);
+  color: #10b981;
+  border-color: rgba(16, 185, 129, 0.2);
+}
+
+.ticket-status.printed {
+  background: rgba(139, 92, 246, 0.1);
+  color: #8b5cf6;
+  border-color: rgba(139, 92, 246, 0.2);
+}
+
+.ticket-status.cancelled {
+  background: rgba(239, 68, 68, 0.1);
+  color: #ef4444;
+  border-color: rgba(239, 68, 68, 0.2);
+}
+
+.ticket-info {
+  flex: 1;
+  margin-bottom: 16px;
+  overflow-y: auto;
+}
+
+.ticket-field {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 0;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.field-label {
+  color: #64748b;
+  font-weight: 500;
+  font-size: 0.8rem;
+}
+
+.field-value {
+  color: #1e293b;
+  font-weight: 600;
+  font-family: "JetBrains Mono", "Courier New", monospace;
+  text-align: right;
+  font-size: 0.8rem;
+}
+
+.ticket-total {
+  background: linear-gradient(135deg, #06b6d4, #0891b2);
+  color: white;
+  padding: 16px;
+  border-radius: 12px;
+  text-align: center;
+  margin-bottom: 16px;
+  box-shadow: 0 15px 30px -8px rgba(6, 182, 212, 0.4);
+}
+
+.total-label {
+  font-size: 0.8rem;
+  opacity: 0.9;
+  margin-bottom: 6px;
+  font-weight: 500;
+}
+
+.total-amount {
+  font-size: 1.5rem;
+  font-weight: 800;
+  font-family: "JetBrains Mono", "Courier New", monospace;
+  letter-spacing: -0.025em;
+}
+
+.qr-section {
+  text-align: center;
+  padding: 16px;
+  background: #f8fafc;
+  border-radius: 10px;
+  border: 1px solid #e2e8f0;
+}
+
+.qr-placeholder {
+  width: 64px;
+  height: 64px;
+  background: #f1f5f9;
+  border-radius: 6px;
+  margin: 0 auto 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #64748b;
+  font-size: 0.7rem;
+  border: 1px solid #e2e8f0;
+}
+
+.ticket-code {
+  font-size: 0.7rem;
+  color: #64748b;
+  font-family: "JetBrains Mono", "Courier New", monospace;
+}
+
+.timestamp {
+  text-align: center;
+  font-size: 0.65rem;
+  color: #94a3b8;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid #f1f5f9;
+}
+
+/* ===========================
+           RESPONSIVE MEJORADO
+           =========================== */
+@media (max-width: 1400px) {
+  .vessel-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 1200px) {
+  .main-container {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto auto;
+    height: auto;
+    min-height: 100vh;
+  }
+
+  .ticket-panel {
+    order: -1;
+    max-height: 60vh;
+  }
+
+  .pos-panel {
+    max-height: none;
+  }
+}
+
+@media (max-width: 768px) {
+  .main-container {
+    padding: 12px;
+    gap: 12px;
+  }
+
+  .pos-panel,
+  .ticket-panel {
+    padding: 16px;
+  }
+
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .vessel-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .action-buttons {
+    grid-template-columns: 1fr;
+  }
+
+  .passengers-section {
+    flex-direction: column;
+    gap: 12px;
+    align-items: stretch;
+  }
+
+  .special-controls {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+}
+
+@media (max-width: 480px) {
+  .vessel-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .vessel-card {
+    aspect-ratio: auto;
+    flex-direction: row;
+    text-align: left;
+    padding: 12px 16px;
+  }
+
+  .vessel-icon {
+    margin-bottom: 0;
+    margin-right: 12px;
+  }
+
+  .vessel-info {
+    flex: 1;
+  }
+}
+
+/* ===========================
+           ANIMACIONES Y TRANSICIONES
+           =========================== */
+@keyframes slideInRight {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slideOutRight {
+  from {
+    transform: translateX(0);
+    opacity: 1;
+  }
+  to {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.section {
+  animation: fadeIn 0.5s ease-out;
+}
+
+/* Optimización para pantallas pequeñas */
+@media (max-height: 700px) {
+  .section {
+    margin-bottom: 16px;
+  }
+
+  .section-title {
+    margin-bottom: 12px;
+    font-size: 1rem;
+  }
+
+  .form-input,
+  .counter-group,
+  .action-btn {
+    height: 36px;
+  }
+
+  .action-btn {
+    padding: 8px 12px;
+    font-size: 0.8rem;
+  }
+}
