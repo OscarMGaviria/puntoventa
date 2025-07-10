@@ -1,11 +1,12 @@
 // ===========================
-// 📢 MÓDULO DE ALERTAS LATERALES
+// 📢 MÓDULO DE ALERTAS LATERALES CORREGIDO
 // ===========================
 
 class AlertSystem {
     constructor() {
         this.alerts = [];
         this.container = null;
+        this.maxAlerts = 5; // Máximo de alertas simultáneas
         this.init();
     }
 
@@ -208,8 +209,19 @@ class AlertSystem {
         document.head.appendChild(style);
     }
 
-    // Mostrar alerta
+    // Mostrar alerta (MEJORADO)
     show(type, title, message, duration = 5000) {
+        // Evitar alertas duplicadas
+        if (this.isDuplicate(type, title, message)) {
+            console.log('🚫 Alerta duplicada evitada:', title);
+            return null;
+        }
+
+        // Limitar número de alertas simultáneas
+        if (this.alerts.length >= this.maxAlerts) {
+            this.hideOldest();
+        }
+
         const alertId = 'alert-' + Date.now() + Math.random().toString(36).substr(2, 9);
         
         const alert = {
@@ -218,7 +230,8 @@ class AlertSystem {
             title: title,
             message: message,
             duration: duration,
-            element: null
+            element: null,
+            timestamp: Date.now()
         };
 
         const alertElement = this.createElement(alert);
@@ -226,6 +239,8 @@ class AlertSystem {
         
         this.container.appendChild(alertElement);
         this.alerts.push(alert);
+
+        console.log(`📢 Alerta mostrada: [${type.toUpperCase()}] ${title}`);
 
         // Auto-hide después del tiempo especificado
         if (duration > 0) {
@@ -235,6 +250,27 @@ class AlertSystem {
         }
 
         return alertId;
+    }
+
+    // Verificar si es una alerta duplicada
+    isDuplicate(type, title, message) {
+        const now = Date.now();
+        const duplicateWindow = 3000; // 3 segundos para considerar duplicado
+
+        return this.alerts.some(alert => 
+            alert.type === type && 
+            alert.title === title && 
+            alert.message === message &&
+            (now - alert.timestamp) < duplicateWindow
+        );
+    }
+
+    // Ocultar la alerta más antigua
+    hideOldest() {
+        if (this.alerts.length > 0) {
+            const oldestAlert = this.alerts[0];
+            this.hide(oldestAlert.id);
+        }
     }
 
     // Crear elemento HTML de la alerta
@@ -265,40 +301,89 @@ class AlertSystem {
         return element;
     }
 
-    // Ocultar alerta específica
+    // Ocultar alerta específica (MEJORADO)
     hide(alertId) {
         const alertIndex = this.alerts.findIndex(alert => alert.id === alertId);
-        if (alertIndex === -1) return;
+        if (alertIndex === -1) {
+            console.log('⚠️ Alerta no encontrada para ocultar:', alertId);
+            return;
+        }
 
         const alert = this.alerts[alertIndex];
+        
+        if (!alert.element || !alert.element.parentNode) {
+            // Elemento ya fue removido, solo limpiar array
+            this.alerts.splice(alertIndex, 1);
+            return;
+        }
+
+        console.log(`📢 Ocultando alerta: ${alert.title}`);
         
         alert.element.classList.add('alert-hiding');
         
         setTimeout(() => {
-            if (alert.element && alert.element.parentNode) {
-                alert.element.parentNode.removeChild(alert.element);
+            try {
+                if (alert.element && alert.element.parentNode) {
+                    alert.element.parentNode.removeChild(alert.element);
+                }
+            } catch (error) {
+                console.warn('Error removiendo elemento de alerta:', error);
             }
-            this.alerts.splice(alertIndex, 1);
+            
+            // Remover del array
+            const currentIndex = this.alerts.findIndex(a => a.id === alertId);
+            if (currentIndex !== -1) {
+                this.alerts.splice(currentIndex, 1);
+            }
         }, 300);
     }
 
-    // Limpiar todas las alertas
+    // Limpiar todas las alertas (MEJORADO)
     clear() {
-        this.alerts.forEach(alert => {
+        console.log('🧹 Limpiando todas las alertas');
+        
+        // Crear copia del array para evitar problemas de índices
+        const alertsToHide = [...this.alerts];
+        
+        alertsToHide.forEach(alert => {
             if (alert.element && alert.element.parentNode) {
                 alert.element.classList.add('alert-hiding');
                 setTimeout(() => {
-                    if (alert.element && alert.element.parentNode) {
-                        alert.element.parentNode.removeChild(alert.element);
+                    try {
+                        if (alert.element && alert.element.parentNode) {
+                            alert.element.parentNode.removeChild(alert.element);
+                        }
+                    } catch (error) {
+                        console.warn('Error removiendo elemento durante clear:', error);
                     }
                 }, 300);
             }
         });
-        this.alerts = [];
+        
+        // Limpiar array después de las animaciones
+        setTimeout(() => {
+            this.alerts = [];
+        }, 400);
     }
 
-    // Métodos de conveniencia
-    success(title, message, duration = 5000) {
+    // Ocultar alertas de un tipo específico
+    hideType(type) {
+        const alertsOfType = this.alerts.filter(alert => alert.type === type);
+        alertsOfType.forEach(alert => this.hide(alert.id));
+    }
+
+    // Ocultar alertas anteriores del mismo tipo al mostrar una nueva
+    replaceType(type, title, message, duration = 5000) {
+        this.hideType(type);
+        
+        // Esperar un poco para que se oculten las anteriores
+        setTimeout(() => {
+            this.show(type, title, message, duration);
+        }, 100);
+    }
+
+    // Métodos de conveniencia (MEJORADOS)
+    success(title, message, duration = 4000) {
         return this.show('success', title, message, duration);
     }
 
@@ -310,7 +395,7 @@ class AlertSystem {
         return this.show('warning', title, message, duration);
     }
 
-    info(title, message, duration = 5000) {
+    info(title, message, duration = 4000) {
         return this.show('info', title, message, duration);
     }
 
@@ -320,6 +405,29 @@ class AlertSystem {
 
     dark(title, message, duration = 5000) {
         return this.show('dark', title, message, duration);
+    }
+
+    // Métodos especiales para evitar duplicados
+    successReplace(title, message, duration = 4000) {
+        return this.replaceType('success', title, message, duration);
+    }
+
+    infoReplace(title, message, duration = 4000) {
+        return this.replaceType('info', title, message, duration);
+    }
+
+    // Obtener estado del sistema
+    getStatus() {
+        return {
+            totalAlerts: this.alerts.length,
+            maxAlerts: this.maxAlerts,
+            alerts: this.alerts.map(alert => ({
+                id: alert.id,
+                type: alert.type,
+                title: alert.title,
+                timestamp: alert.timestamp
+            }))
+        };
     }
 }
 
@@ -331,10 +439,10 @@ class AlertSystem {
 const alertSystem = new AlertSystem();
 
 // ===========================
-// 📋 EJEMPLOS DE USO
+// 📋 FUNCIONES GLOBALES MEJORADAS
 // ===========================
 
-// Funciones globales para facilidad de uso
+// Funciones básicas
 function showAlert(type, title, message, duration) {
     return alertSystem.show(type, title, message, duration);
 }
@@ -363,48 +471,113 @@ function showDark(title, message, duration) {
     return alertSystem.dark(title, message, duration);
 }
 
+// Funciones especiales para evitar duplicados
+function showSuccessReplace(title, message, duration) {
+    return alertSystem.successReplace(title, message, duration);
+}
+
+function showInfoReplace(title, message, duration) {
+    return alertSystem.infoReplace(title, message, duration);
+}
+
+// Funciones de control
 function clearAllAlerts() {
     alertSystem.clear();
 }
 
+function hideAlertsOfType(type) {
+    alertSystem.hideType(type);
+}
+
 // ===========================
-// 🧪 FUNCIÓN DE PRUEBA
+// 🧪 FUNCIÓN DE PRUEBA MEJORADA
 // ===========================
 
 function testAllAlerts() {
+    console.log('🧪 Probando sistema de alertas...');
+    
     setTimeout(() => showSuccess('¡Éxito!', 'Operación completada correctamente'), 100);
     setTimeout(() => showError('Error', 'Algo salió mal en el proceso'), 300);
     setTimeout(() => showWarning('Advertencia', 'Revisa los datos ingresados'), 500);
     setTimeout(() => showInfo('Información', 'Proceso iniciado correctamente'), 700);
     setTimeout(() => showPrimary('Importante', 'Mensaje destacado del sistema'), 900);
     setTimeout(() => showDark('Sistema', 'Notificación del administrador'), 1100);
+    
+    // Probar sistema anti-duplicados
+    setTimeout(() => {
+        console.log('🧪 Probando anti-duplicados...');
+        showSuccess('Test', 'Primer mensaje');
+        showSuccess('Test', 'Primer mensaje'); // Debería ser bloqueado
+        showSuccess('Test', 'Segundo mensaje diferente'); // Debería mostrarse
+    }, 2000);
 }
 
 // ===========================
-// 📖 DOCUMENTACIÓN
+// 🔧 INTEGRACIÓN CON SISTEMA POS
+// ===========================
+
+// Función especial para mensajes del sistema POS
+function showSystemMessage(message, type = 'info', duration = 3000) {
+    return alertSystem.replaceType(type, 'Sistema POS', message, duration);
+}
+
+// Función para PDF específicamente
+function showPDFMessage(title, message, success = true) {
+    if (success) {
+        // Ocultar mensajes de "Generando PDF..." antes de mostrar éxito
+        alertSystem.hideType('info');
+        setTimeout(() => {
+            alertSystem.success(title, message, 4000);
+        }, 200);
+    } else {
+        alertSystem.error(title, message, 6000);
+    }
+}
+
+// ===========================
+// 📖 DOCUMENTACIÓN ACTUALIZADA
 // ===========================
 
 /*
-CÓMO USAR:
+SISTEMA DE ALERTAS MEJORADO:
 
-1. Incluir este archivo en tu HTML:
-   <script src="alerts.js"></script>
+NUEVAS CARACTERÍSTICAS:
+✅ Anti-duplicados (evita alertas repetidas en 3 segundos)
+✅ Límite de alertas simultáneas (máximo 5)
+✅ Auto-limpieza de alertas antiguas
+✅ Funciones especiales para reemplazar por tipo
+✅ Mejor manejo de errores
+✅ Logs detallados para debugging
+✅ Estado del sistema consultable
 
-2. Usar las funciones:
-   showSuccess('Título', 'Mensaje');
-   showError('Error', 'Descripción del error');
-   showWarning('Cuidado', 'Mensaje de advertencia');
-   showInfo('Info', 'Información general');
-   showPrimary('Destacado', 'Mensaje importante');
-   showDark('Sistema', 'Notificación oscura');
+FUNCIONES DISPONIBLES:
 
-3. Personalizar duración (en milisegundos):
-   showSuccess('Título', 'Mensaje', 3000); // 3 segundos
-   showError('Error', 'Mensaje', 0); // Sin auto-hide
+Básicas:
+- showSuccess(title, message, duration)
+- showError(title, message, duration)  
+- showWarning(title, message, duration)
+- showInfo(title, message, duration)
 
-4. Limpiar todas las alertas:
-   clearAllAlerts();
+Especiales:
+- showSuccessReplace() // Reemplaza alertas de éxito anteriores
+- showInfoReplace() // Reemplaza alertas de info anteriores
+- clearAllAlerts() // Limpia todas las alertas
+- hideAlertsOfType(type) // Oculta alertas de un tipo específico
 
-5. Probar todas las alertas:
-   testAllAlerts();
+Sistema POS:
+- showSystemMessage(message, type, duration) // Mensajes del sistema
+- showPDFMessage(title, message, success) // Específico para PDF
+
+Control:
+- alertSystem.getStatus() // Estado del sistema
+- testAllAlerts() // Prueba todas las alertas
+
+EJEMPLO DE USO CORRECTO PARA PDF:
+
+// Al iniciar generación
+showInfo('Generando PDF...', 'Creando archivo...');
+
+// Al completar (reemplaza la anterior automáticamente)
+showPDFMessage('¡PDF generado!', 'Archivo descargado exitosamente', true);
+
 */

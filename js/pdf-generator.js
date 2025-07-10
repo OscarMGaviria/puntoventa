@@ -120,19 +120,19 @@ class PDFGenerator {
     }
 
     /**
-     * Generar PDF formato térmico (80mm)
+     * Generar PDF formato térmico (58mm)
      */
     async generateThermalPDF(ticketData) {
-        // Crear documento PDF (80mm de ancho)
+        // Crear documento PDF (58mm de ancho)
         const doc = new this.jsPDF({
             orientation: 'portrait',
             unit: 'mm',
-            format: [58, 200] // 80mm ancho, altura variable
+            format: [50, 200] // 58mm ancho, altura variable
         });
 
-        let yPos = 10;
-        const pageWidth = 58;
-        const margin = 5;
+        let yPos = 15;
+        const pageWidth = 50;
+        const margin = 3;
         const contentWidth = pageWidth - (margin * 2);
 
         // Configurar fuente
@@ -140,24 +140,22 @@ class PDFGenerator {
 
         // === ENCABEZADO ===
         // Logo emoji (si fuera imagen real, usar doc.addImage)
-        doc.setFontSize(20);
-        doc.text('🚢', pageWidth/2, yPos, { align: 'center' });
         yPos += 8;
 
         // Título
         doc.setFontSize(12);
         doc.setFont('courier', 'bold');
-        doc.text('EMBARCACIONES', pageWidth/2, yPos, { align: 'center' });
+        doc.text('EMBARCADERO', pageWidth/2, yPos, { align: 'center' });
         yPos += 5;
-        doc.text('DE GUATAPÉ', pageWidth/2, yPos, { align: 'center' });
+        doc.text('FLOTANTE', pageWidth/2, yPos, { align: 'center' });
         yPos += 4;
 
         // Subtítulo
         doc.setFontSize(8);
         doc.setFont('courier', 'normal');
-        doc.text('Sistema de Pasajes', pageWidth/2, yPos, { align: 'center' });
+        doc.text('Malecón', pageWidth/2, yPos, { align: 'center' });
         yPos += 3;
-        doc.text('Embalse de Guatapé', pageWidth/2, yPos, { align: 'center' });
+        doc.text('San Juan del puerto', pageWidth/2, yPos, { align: 'center' });
         yPos += 5;
 
         // Línea separadora
@@ -180,8 +178,13 @@ class PDFGenerator {
         ];
 
         ticketInfo.forEach(([label, value]) => {
+            if(label==='FECHA EMISIÓN:'){
+                doc.setFont('courier', 'bold');
+            } else {
+                doc.setFont('courier', 'normal');
+            }
+            doc.text(value, margin + 21, yPos);
             doc.text(label, margin, yPos);
-            doc.text(value, margin + 25, yPos);
             yPos += 3.5;
         });
 
@@ -208,6 +211,11 @@ class PDFGenerator {
         }
 
         passengerInfo.forEach(([label, value]) => {
+            if(label==='NOMBRE:'){
+                doc.setFont('courier', 'bold');
+            } else {
+                doc.setFont('courier', 'normal');
+            }
             doc.text(label, margin, yPos);
             // Ajustar texto largo
             const maxWidth = contentWidth - 25;
@@ -350,11 +358,11 @@ class PDFGenerator {
         doc.setTextColor(255, 255, 255);
         doc.setFontSize(24);
         doc.setFont('helvetica', 'bold');
-        doc.text('🚢 EMBARCACIONES DE GUATAPÉ', pageWidth/2, 20, { align: 'center' });
+        doc.text('EMBARCADERO FLOTANTE', pageWidth/2, 20, { align: 'center' });
         
         doc.setFontSize(14);
         doc.setFont('helvetica', 'normal');
-        doc.text('Sistema de Venta de Pasajes - Embalse de Guatapé', pageWidth/2, 35, { align: 'center' });
+        doc.text('Malecón San Juan del Puerto', pageWidth/2, 35, { align: 'center' });
 
         yPos = 70;
 
@@ -428,7 +436,7 @@ class PDFGenerator {
             doc.setFont('helvetica', 'bold');
             doc.text(label, rightColumnX, rightYPos);
             doc.setFont('helvetica', 'normal');
-            const splitValue = doc.splitTextToSize(value, 58);
+            const splitValue = doc.splitTextToSize(value, 50);
             doc.text(splitValue, rightColumnX + 45, rightYPos);
             rightYPos += 6 * splitValue.length;
         });
@@ -536,7 +544,7 @@ class PDFGenerator {
         // Encabezado compacto
         doc.setFontSize(16);
         doc.setFont('helvetica', 'bold');
-        doc.text('🚢 EMBARCACIONES DE GUATAPÉ', pageWidth/2, yPos, { align: 'center' });
+        doc.text('EMBARCADERO FLOTANTE', pageWidth/2, yPos, { align: 'center' });
         yPos += 6;
 
         doc.setFontSize(10);

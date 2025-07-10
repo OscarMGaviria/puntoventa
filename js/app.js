@@ -1,13 +1,23 @@
-//app.js
+//app.js - Versión completa y funcional para POS
 // Variables globales del sistema
 let selectedVessel = null;
 let vesselPrice = 0;
+let originalVesselPrice = 0;
+let customPrice = 0;
 let ticketGenerated = false;
+let ticketPrinted = false;
+let ticketCancelled = false;
 let currentUser = null;
+let currentTicketCode = null;
+let isReservation = false;
 
-// Elementos del DOM - Sistema Principal
-const mainActionBtn = document.getElementById("mainActionBtn");
-const btnActionText = document.getElementById("btnActionText");
+// Estados del ticket
+const TICKET_STATES = {
+    DRAFT: 'BORRADOR',
+    GENERATED: 'GENERADO',
+    PRINTED: 'IMPRESO',
+    CANCELLED: 'ANULADO'
+};
 
 // Inicialización
 document.addEventListener("DOMContentLoaded", function () {
@@ -16,56 +26,65 @@ document.addEventListener("DOMContentLoaded", function () {
 
 function initializeSystem() {
   // Establecer fecha mínima como hoy
-  document.getElementById("fecha").min = new Date().toISOString().split("T")[0];
-  document.getElementById("fecha").value = new Date()
-    .toISOString()
-    .split("T")[0];
+  const today = new Date().toISOString().split("T")[0];
+  document.getElementById("fecha").min = today;
+  document.getElementById("fecha").value = today;
 
   // Configurar event listeners
   setupEventListeners();
+  setupFieldValidation();
+  
+  // Inicializar estado de botones
+  updateButtonStates();
+  updateTicketStatus(TICKET_STATES.DRAFT);
+  
+  // Inicializar toggle de reserva
+  initializeReservationToggle();
 
-  console.log("🚢 Sistema de tickets inicializado");
+  console.log("🚢 Sistema POS inicializado");
+  showInfo("Sistema iniciado", "POS de Embarcaciones de Guatapé listo");
 }
 
-function setupEventListeners() {
-  // Sistema principal - listeners para actualizar botón
-  document.getElementById("nombre").addEventListener("input", handleFormChange);
-  document
-    .getElementById("documento")
-    .addEventListener("input", handleFormChange);
-}
-
-function handleFormChange() {
-  updateTicket();
-  updateMainButton();
-  // Reset ticket generated state when form changes
-  if (ticketGenerated) {
-    ticketGenerated = false;
-    updateMainButton();
+function initializeReservationToggle() {
+  const toggle = document.getElementById("reservationToggle");
+  if (toggle) {
+    toggle.classList.remove("active");
+    isReservation = false;
   }
 }
 
-function clearTicketForm() {
-  document.getElementById("nombre").value = "";
-  document.getElementById("documento").value = "";
-  document.getElementById("telefono").value = "";
-  document.getElementById("emailCliente").value = "";
-  document.getElementById("adultos").value = "1";
-  document.getElementById("ninos").value = "0";
-  document.getElementById("hora").value = "";
-
-  // Deseleccionar embarcación
-  document.querySelectorAll(".vessel-card").forEach((el) => {
-    el.classList.remove("selected");
-  });
-  selectedVessel = null;
-  vesselPrice = 0;
-
-  updateTicket();
-  updateMainButton();
+function setupEventListeners() {
+  // Listeners para campos principales
+  document.getElementById("nombre").addEventListener("input", handleFormChange);
+  document.getElementById("documento").addEventListener("input", handleFormChange);
+  document.getElementById("telefono").addEventListener("input", handleFormChange);
+  document.getElementById("emailCliente").addEventListener("input", handleFormChange);
+  document.getElementById("fecha").addEventListener("change", handleFormChange);
+  document.getElementById("adultos").addEventListener("input", handleFormChange);
+  document.getElementById("ninos").addEventListener("input", handleFormChange);
 }
 
-// FUNCIONES DEL SISTEMA DE TICKETS
+function handleFormChange() {
+  updateVesselCardPrices();
+  updateTicket();
+  updateButtonStates();
+  
+  // Si el ticket ya fue generado y se cambian datos, marcar como borrador
+  if (ticketGenerated && !ticketCancelled) {
+    resetTicketState();
+    updateTicketStatus(TICKET_STATES.DRAFT);
+    showWarning('Cambios detectados', 'Debe generar el ticket nuevamente');
+  }
+}
+
+function resetTicketState() {
+  ticketGenerated = false;
+  ticketPrinted = false;
+  currentTicketCode = null;
+  updateButtonStates();
+}
+
+// FUNCIONES DE EMBARCACIONES
 function selectVessel(element) {
   document.querySelectorAll(".vessel-card").forEach((el) => {
     el.classList.remove("selected");
@@ -73,39 +92,61 @@ function selectVessel(element) {
 
   element.classList.add("selected");
   selectedVessel = element.dataset.type;
+  originalVesselPrice = parseInt(element.dataset.price);
   
-  // MODIFICAR: Verificar si está en modo reserva
-  const switchElement = document.getElementById('reservationSwitch');
-  if (switchElement && switchElement.checked) {
-    vesselPrice = 10000;
-  } else {
-    vesselPrice = parseInt(element.dataset.price);
-  }
-
   updateTicket();
-  updateMainButton();
+  updateButtonStates();
+  handleFormChange();
 }
 
+// FUNCIÓN DE TOGGLE DE RESERVA (ACTUALIZADA)
 function toggleReservation() {
-  const switchElement = document.getElementById('reservationSwitch');
+  const toggle = document.getElementById('reservationToggle');
   const tipoServicio = document.getElementById('ticket-tipo-servicio');
   
-  if (switchElement.checked) {
+  // Cambiar estado del toggle
+  isReservation = !isReservation;
+  
+  if (isReservation) {
+    toggle.classList.add('active');
     tipoServicio.textContent = 'Con Reserva';
-    // AGREGAR: Aplicar descuento de reserva
-    vesselPrice = 10000;
   } else {
+    toggle.classList.remove('active');
     tipoServicio.textContent = 'Nuevo Pasaje';
-    // AGREGAR: Restaurar precio original si hay embarcación seleccionada
-    const selectedCard = document.querySelector('.vessel-card.selected');
-    if (selectedCard) {
-      vesselPrice = parseInt(selectedCard.dataset.price);
-    }
+  }
+  
+  // Actualizar ticket con nuevo cálculo
+  updateTicket();
+  handleFormChange();
+}
+
+// FUNCIONES DE PRECIO PERSONALIZADO
+function applyCustomPrice() {
+  const customPriceInput = document.getElementById('precioPersonalizado');
+  const value = parseInt(customPriceInput.value);
+  
+  if (value && value > 0) {
+    customPrice = value;
+    customPriceInput.style.borderColor = '#10b981';
+  } else {
+    resetPrice();
   }
   
   updateTicket();
+  handleFormChange();
 }
 
+function resetPrice() {
+  const customPriceInput = document.getElementById('precioPersonalizado');
+  customPriceInput.value = '';
+  customPriceInput.style.borderColor = '';
+  customPrice = 0;
+  
+  updateTicket();
+  handleFormChange();
+}
+
+// FUNCIONES DE CONTADORES
 function incrementCounter(fieldId) {
   const input = document.getElementById(fieldId);
   const currentValue = parseInt(input.value) || 0;
@@ -114,7 +155,7 @@ function incrementCounter(fieldId) {
   if (currentValue < maxValue) {
     input.value = currentValue + 1;
     updateTicket();
-    updateMainButton();
+    handleFormChange();
   }
 }
 
@@ -126,55 +167,88 @@ function decrementCounter(fieldId) {
   if (currentValue > minValue) {
     input.value = currentValue - 1;
     updateTicket();
-    updateMainButton();
+    handleFormChange();
   }
 }
 
-function updateMainButton() {
+// FUNCIONES DE BOTONES
+function updateButtonStates() {
   const nombre = document.getElementById("nombre").value;
   const documento = document.getElementById("documento").value;
-  const btn = mainActionBtn;
-  const btnTextEl = btnActionText;
-  const btnIcon = document.querySelector(".btn-icon");
-
-  const isFormComplete = nombre && documento && selectedVessel;
-
-  if (!isFormComplete) {
-    btn.className = "action-btn disabled";
-    btnTextEl.textContent = "Complete los datos";
-    btnIcon.textContent = "⚠️";
-    btn.onclick = () => {
-      showWarning('Campos incompletos', 'Complete nombre, documento y seleccione embarcación');
-    };
-  } else if (!ticketGenerated) {
-    btn.className = "action-btn generate";
-    btnTextEl.textContent = "Generar Ticket";
-    btnIcon.textContent = "🎫";
-    btn.onclick = generateTicket;
+  const fecha = document.getElementById("fecha").value;
+  
+  const generateBtn = document.getElementById("generateBtn");
+  const printBtn = document.getElementById("printBtn");
+  const cancelBtn = document.getElementById("cancelBtn");
+  
+  const isFormComplete = nombre && documento && selectedVessel && fecha;
+  
+  // Botón Generar
+  if (ticketCancelled) {
+    generateBtn.classList.add('disabled');
+    generateBtn.disabled = true;
+    generateBtn.innerHTML = '<i class="fas fa-times-circle"></i> Ticket Anulado';
+  } else if (!isFormComplete) {
+    generateBtn.classList.add('disabled');
+    generateBtn.disabled = true;
+    generateBtn.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Complete Datos';
+  } else if (ticketGenerated) {
+    generateBtn.classList.remove('disabled');
+    generateBtn.disabled = false;
+    generateBtn.innerHTML = '<i class="fas fa-sync-alt"></i> Regenerar';
   } else {
-    btn.className = "action-btn print";
-    btnTextEl.textContent = "Imprimir Ticket";
-    btnIcon.textContent = "🖨️";
-    btn.onclick = printTicket;
+    generateBtn.classList.remove('disabled');
+    generateBtn.disabled = false;
+    generateBtn.innerHTML = '<i class="fas fa-ticket-alt"></i> Generar';
+  }
+  
+  // Botón Imprimir
+  if (ticketGenerated && !ticketCancelled) {
+    printBtn.classList.remove('disabled');
+    printBtn.disabled = false;
+    if (ticketPrinted) {
+      printBtn.innerHTML = '<i class="fas fa-print"></i> Reimprimir';
+    } else {
+      printBtn.innerHTML = '<i class="fas fa-print"></i> Imprimir';
+    }
+  } else {
+    printBtn.classList.add('disabled');
+    printBtn.disabled = true;
+    printBtn.innerHTML = '<i class="fas fa-print"></i> Imprimir';
+  }
+  
+  // Botón Anular
+  if (ticketGenerated && !ticketCancelled) {
+    cancelBtn.classList.remove('disabled');
+    cancelBtn.disabled = false;
+  } else {
+    cancelBtn.classList.add('disabled');
+    cancelBtn.disabled = true;
   }
 }
 
-function handleMainAction() {
-  // Esta función será reemplazada por updateMainButton()
-}
-
+// FUNCIÓN PRINCIPAL DE ACTUALIZACIÓN DEL TICKET
 function updateTicket() {
   const nombre = document.getElementById("nombre").value || "-";
   const documento = document.getElementById("documento").value || "-";
   const fecha = document.getElementById("fecha").value || "-";
-  const hora = document.getElementById("hora").value || "-";
   const adultos = parseInt(document.getElementById("adultos").value) || 0;
   const ninos = parseInt(document.getElementById("ninos").value) || 0;
 
+  // Actualizar campos del ticket
   document.getElementById("ticket-nombre").textContent = nombre;
   document.getElementById("ticket-documento").textContent = documento;
   document.getElementById("ticket-fecha").textContent = fecha;
+  
+  // Generar hora actual
+  const now = new Date();
+  const hora = now.toLocaleTimeString('es-CO', { 
+    hour: '2-digit', 
+    minute: '2-digit',
+    hour12: false 
+  });
   document.getElementById("ticket-hora").textContent = hora;
+  
   document.getElementById("ticket-embarcacion").textContent = selectedVessel
     ? selectedVessel.charAt(0).toUpperCase() + selectedVessel.slice(1)
     : "-";
@@ -183,464 +257,348 @@ function updateTicket() {
   document.getElementById("ticket-pasajeros").textContent =
     totalPasajeros > 0 ? `${adultos} adultos, ${ninos} niños` : "-";
 
-  const total = selectedVessel
-    ? adultos * vesselPrice + ninos * vesselPrice * 0.5
-    : 0;
-  document.getElementById(
-    "ticket-total"
-  ).textContent = `$${total.toLocaleString()}`;
-
-  const codigo =
-    "TKT-" +
-    Date.now().toString(36).toUpperCase() +
-    Math.random().toString(36).substr(2, 3).toUpperCase();
-  document.getElementById("ticket-codigo").textContent = codigo;
-
-  if (nombre && documento && selectedVessel) {
-    generateQRCode();
+  // Calcular total
+  let total = 0;
+  if (selectedVessel) {
+    const totalPersonas = adultos;
+    
+    // Si está en modo reserva, usar precio fijo
+    if (isReservation) {
+      total = 10000;
+    } else {
+      // Calcular según tipo de embarcación
+      switch (selectedVessel) {
+        case 'lancha': // Lancha Taxi
+          total = totalPersonas * 30000;
+          break;
+          
+        case 'deportiva': // Lanchas Deportivas
+          if (totalPersonas <= 4) {
+            total = 250000;
+          } else if (totalPersonas <= 6) {
+            total = 300000;
+          } else {
+            total = totalPersonas * 50000;
+          }
+          break;
+          
+        case 'planchon': // Planchones
+          if (totalPersonas <= 10) {
+            total = 350000;
+          } else if (totalPersonas <= 15) {
+            total = 450000;
+          } else if (totalPersonas <= 20) {
+            total = 500000;
+          } else {
+            total = totalPersonas * 25000;
+          }
+          break;
+          
+        case 'barco': // Barcos
+          if (totalPersonas <= 19) {
+            total = totalPersonas * 30000;
+          } else if (totalPersonas <= 30) {
+            total = totalPersonas * 25000;
+          } else {
+            total = totalPersonas * 20000;
+          }
+          break;
+          
+        case 'yate': // Yates
+          if (totalPersonas <= 10) {
+            total = 400000;
+          } else {
+            total = totalPersonas * 30000;
+          }
+          break;
+          
+        case 'carguero': // Carguero
+          total = Math.ceil(totalPersonas / 5) * 200000;
+          break;
+          
+        default:
+          total = 0;
+      }
+    }
+    
+    // Aplicar precio personalizado si existe
+    const customPriceInput = document.getElementById('precioPersonalizado');
+    if (customPriceInput.value && parseInt(customPriceInput.value) > 0) {
+      total = parseInt(customPriceInput.value);
+    }
   }
-}
+  
+  document.getElementById("ticket-total").textContent = `$${total.toLocaleString()}`;
 
-function generateQRCode() {
-  const nombre = document.getElementById("nombre").value || "Sin nombre";
-  const documento =
-    document.getElementById("documento").value || "Sin documento";
-  const fecha = document.getElementById("fecha").value || "Sin fecha";
-  const hora = document.getElementById("hora").value || "Sin hora";
-  const embarcacion = selectedVessel || "Sin embarcación";
-  const adultos = parseInt(document.getElementById("adultos").value) || 0;
-  const ninos = parseInt(document.getElementById("ninos").value) || 0;
-  const codigo = document.getElementById("ticket-codigo").textContent;
-  const total = document.getElementById("ticket-total").textContent;
-
-  const qrData = {
-    codigo: codigo,
-    pasajero: nombre,
-    documento: documento,
-    fecha: fecha,
-    hora: hora,
-    embarcacion: embarcacion,
-    adultos: adultos,
-    ninos: ninos,
-    total: total,
-    timestamp: new Date().toISOString(),
-  };
-
-  const qrString = JSON.stringify(qrData);
-  const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=80x80&data=${encodeURIComponent(
-    qrString
-  )}`;
-
-  const qrContainer = document.getElementById("qr-container");
-  qrContainer.innerHTML = `<img src="${qrUrl}" alt="QR Code" class="qr-code-img" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
-                                    <div class="qr-placeholder" style="display:none;">Error al generar QR</div>`;
-}
-
-function generateTicket() {
-  const nombre = document.getElementById("nombre").value;
-  const documento = document.getElementById("documento").value;
-
-  if (!nombre || !documento || !selectedVessel) {
-    showError('Error', 'Complete campos obligatorios');
-    return;
+  // Actualizar código si no existe
+  if (!currentTicketCode) {
+    currentTicketCode = "TKT-" + Date.now().toString(36).toUpperCase() + 
+                      Math.random().toString(36).substr(2, 3).toUpperCase();
   }
-
-  const now = new Date();
-  document.getElementById(
-    "ticket-timestamp"
-  ).textContent = `Generado: ${now.toLocaleDateString()} ${now.toLocaleTimeString()}`;
-
-  generateQRCode();
-  ticketGenerated = true;
-  updateMainButton();
-
-  showSuccess("¡Ticket generado!", "El ticket se ha creado exitosamente");
-
-  const ticket = document.getElementById("ticketPreview");
-  ticket.classList.add("animate-fade");
-
-  setTimeout(() => {
-    showSuccess(
-      "Ticket listo",
-      "Ahora puede imprimir el ticket usando el botón verde"
-    );
-  }, 2500);
+  document.getElementById("ticket-codigo").textContent = currentTicketCode;
 }
 
 // ===========================
-// FUNCIONES DE IMPRESIÓN
+// 🖨️ FUNCIÓN DE IMPRESIÓN PRINCIPAL (CORREGIDA)
 // ===========================
 
-async function printTicket() {
-  const nombre = document.getElementById("nombre").value;
-  const documento = document.getElementById("documento").value;
+/**
+ * Función principal de impresión que muestra el modal de opciones
+ * ESTA ES LA ÚNICA FUNCIÓN printTicket() EN TODO EL SISTEMA
+ */
+function printTicket() {
+    // Verificar si el ticket está generado y es válido
+    if (!ticketGenerated || ticketCancelled) {
+        showError('Error de impresión', 'Debe generar un ticket válido antes de imprimir');
+        return;
+    }
 
-  if (!nombre || !documento || !selectedVessel) {
-    showError("Error", "Datos incompletos para imprimir");
-    return;
-  }
+    // Verificar si el sistema de modales está disponible
+    if (typeof modalSystem !== 'undefined' && modalSystem.isInitialized) {
+        console.log('🎭 Abriendo modal de opciones de impresión...');
+        modalSystem.showPrintOptionsModal();
+    } else {
+        // Si no hay modal disponible, mostrar opciones básicas
+        showWarning('Modal no disponible', 'Sistema de modales no cargado');
+        
+        // Fallback: preguntar con confirm nativo
+        const userChoice = confirm(
+            'Seleccione método de impresión:\n\n' +
+            'OK = Impresora Directa\n' +
+            'Cancelar = Generar PDF'
+        );
+        
+        if (userChoice) {
+            // Impresión directa
+            directPrint();
+        } else {
+            // Generar PDF
+            if (typeof generateTicketPDF !== 'undefined') {
+                generateTicketPDF('thermal');
+            } else {
+                showError('PDF no disponible', 'Generador de PDF no está cargado');
+            }
+        }
+    }
+}
 
+/**
+ * Impresión directa sin modal (función auxiliar)
+ */
+function directPrint() {
+    try {
+        showInfo('Preparando impresión...', 'Configurando ticket para impresión directa');
+        
+        const printContent = generatePrintContent();
+        const printWindow = window.open('', '_blank', 'width=400,height=700');
+        
+        if (!printWindow) {
+            showError('Error de ventana', 'No se pudo abrir la ventana de impresión. Verifique que no estén bloqueadas las ventanas emergentes.');
+            return;
+        }
+        
+        printWindow.document.write(printContent);
+        printWindow.document.close();
+        
+        printWindow.onload = () => {
+            setTimeout(() => {
+                printWindow.print();
+                printWindow.onafterprint = () => {
+                    printWindow.close();
+                    ticketPrinted = true;
+                    updateButtonStates();
+                    updateTicketStatus(TICKET_STATES.PRINTED);
+                    showSuccess("¡Ticket impreso!", "Ticket enviado a la impresora exitosamente");
+                };
+                
+                setTimeout(() => {
+                    if (!printWindow.closed) {
+                        printWindow.close();
+                        ticketPrinted = true;
+                        updateButtonStates();
+                        updateTicketStatus(TICKET_STATES.PRINTED);
+                        showInfo("Impresión completada", "Ventana de impresión cerrada automáticamente");
+                    }
+                }, 30000);
+            }, 500);
+        };
+        
+    } catch (error) {
+        console.error('Error imprimiendo ticket:', error);
+        showError('Error de impresión', 'No se pudo completar la impresión del ticket');
+    }
+}
+
+function cancelTicket() {
   if (!ticketGenerated) {
-    showWarning("Advertencia", "Debe generar el ticket antes de imprimir");
+    showError('Error', 'No hay ticket para anular');
+    return;
+  }
+
+  if (ticketCancelled) {
+    showWarning('Advertencia', 'El ticket ya está anulado');
+    return;
+  }
+
+  // Mostrar confirmación
+  if (!confirm('¿Está seguro que desea anular este ticket?\n\nEsta acción no se puede deshacer.')) {
     return;
   }
 
   try {
-    // Mostrar opciones de impresión con iconos mejorados
-    const printOption = await showPrintOptionsModalWithIcons();
+    // Anular ticket
+    ticketCancelled = true;
     
-    if (printOption === 'cancel') {
-      return;
+    // Actualizar interfaz
+    updateButtonStates();
+    updateTicketStatus(TICKET_STATES.CANCELLED);
+    
+    // Agregar marca de anulación al timestamp
+    const now = new Date();
+    document.getElementById("ticket-timestamp").textContent = 
+      `ANULADO: ${now.toLocaleDateString('es-CO')} ${now.toLocaleTimeString('es-CO')}`;
+    
+    // Efectos visuales
+    const ticketPanel = document.querySelector(".ticket-panel");
+    if (ticketPanel) {
+      ticketPanel.style.opacity = '0.6';
+      ticketPanel.style.filter = 'grayscale(100%)';
     }
-
-    // Generar QR actualizado antes de cualquier impresión
-    generateQRCode();
-
-    switch (printOption) {
-      case 'thermal':
-        await handleThermalPrint();
-        break;
-      case 'pdf-thermal':
-        await generateTicketPDF('thermal');
-        break;
-      case 'pdf-standard':
-        await generateTicketPDF('standard');
-        break;
-      case 'pdf-compact':
-        await generateTicketPDF('compact');
-        break;
-      case 'preview-pdf':
-        await previewTicketPDF('standard');
-        break;
-      case 'standard':
-      default:
-        await handleStandardPrint();
-        break;
-    }
-
+    
+    showSuccess("Ticket anulado", "El ticket ha sido anulado exitosamente");
+    
   } catch (error) {
-    console.error("Error en impresión:", error);
-    showError("Error de impresión", "No se pudo completar la operación. Intente nuevamente.");
+    console.error('Error anulando ticket:', error);
+    showError('Error del sistema', 'No se pudo anular el ticket');
   }
 }
 
-// Función para mostrar modal de opciones con iconos SVG mejorados
-async function showPrintOptionsModalWithIcons() {
-  return new Promise((resolve) => {
-    const modalHTML = `
-      <div id="print-options-modal" style="
-        position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
-        background: rgba(0,0,0,0.7); backdrop-filter: blur(8px);
-        display: flex; align-items: center; justify-content: center;
-        z-index: 10000; font-family: 'Segoe UI', sans-serif;
-        animation: modalFadeIn 0.3s ease-out;
-      ">
-        <div style="
-          background: rgba(255,255,255,0.1); backdrop-filter: blur(20px);
-          border-radius: 20px; padding: 25px; max-width: 520px; width: 90%;
-          box-shadow: 0 20px 60px rgba(0,0,0,0.4);
-          border: 1px solid rgba(255,255,255,0.2);
-          color: white; text-align: center;
-          animation: modalSlideIn 0.4s ease-out;
-        ">
-          <h2 style="margin: 0 0 20px 0; color: #ffd700; display: flex; align-items: center; justify-content: center; gap: 12px; font-size: 1.5em;">
-            <svg width="28" height="28" viewBox="0 0 24 24" fill="currentColor">
-              <rect x="4" y="3" width="16" height="10" rx="1"/>
-              <rect x="2" y="13" width="20" height="6" rx="1"/>
-            </svg>
-            Opciones de Impresión
-          </h2>
-          <p style="margin: 0 0 25px 0; opacity: 0.9;">Seleccione cómo desea imprimir su ticket:</p>
-          
-          <div style="display: grid; gap: 12px; margin-bottom: 20px;">
-            
-            <!-- Impresión Térmica -->
-            <button onclick="selectPrintOption('thermal')" style="
-              background: linear-gradient(45deg, #27ae60, #2ecc71); color: white; border: none;
-              padding: 16px 20px; border-radius: 12px; font-size: 14px; cursor: pointer;
-              transition: all 0.3s ease; text-align: left; display: flex; align-items: center; gap: 15px;
-              box-shadow: 0 4px 15px rgba(39, 174, 96, 0.3);
-            " onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 6px 20px rgba(39, 174, 96, 0.4)'" 
-               onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 15px rgba(39, 174, 96, 0.3)'">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
-                <rect x="3" y="4" width="18" height="12" rx="2"/>
-                <rect x="5" y="6" width="14" height="2" fill="white" opacity="0.9"/>
-                <rect x="6" y="17" width="12" height="3" rx="1"/>
-                <circle cx="8" cy="18.5" r="0.5" fill="white"/>
-                <circle cx="16" cy="18.5" r="0.5" fill="white"/>
-              </svg>
-              <div>
-                <div style="font-weight: bold; margin-bottom: 2px;">Impresora Térmica</div>
-                <div style="font-size: 12px; opacity: 0.9;">Impresión directa en impresora térmica (80mm)</div>
-              </div>
-            </button>
-
-            <!-- PDF Térmico -->
-            <button onclick="selectPrintOption('pdf-thermal')" style="
-              background: linear-gradient(45deg, #e74c3c, #c0392b); color: white; border: none;
-              padding: 16px 20px; border-radius: 12px; font-size: 14px; cursor: pointer;
-              transition: all 0.3s ease; text-align: left; display: flex; align-items: center; gap: 15px;
-              box-shadow: 0 4px 15px rgba(231, 76, 60, 0.3);
-            " onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 6px 20px rgba(231, 76, 60, 0.4)'" 
-               onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 15px rgba(231, 76, 60, 0.3)'">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
-                <rect x="4" y="2" width="12" height="16" rx="1"/>
-                <path d="M14 2 L14 6 L18 6 L16 2 Z" opacity="0.8"/>
-                <rect x="6" y="5" width="6" height="1" fill="white" opacity="0.9"/>
-              </svg>
-              <div>
-                <div style="font-weight: bold; margin-bottom: 2px;">PDF Térmico (80mm)</div>
-                <div style="font-size: 12px; opacity: 0.9;">Descargar PDF optimizado para impresoras térmicas</div>
-              </div>
-            </button>
-
-            <!-- PDF Estándar -->
-            <button onclick="selectPrintOption('pdf-standard')" style="
-              background: linear-gradient(45deg, #3498db, #2980b9); color: white; border: none;
-              padding: 16px 20px; border-radius: 12px; font-size: 14px; cursor: pointer;
-              transition: all 0.3s ease; text-align: left; display: flex; align-items: center; gap: 15px;
-              box-shadow: 0 4px 15px rgba(52, 152, 219, 0.3);
-            " onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 6px 20px rgba(52, 152, 219, 0.4)'" 
-               onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 15px rgba(52, 152, 219, 0.3)'">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
-                <rect x="3" y="2" width="14" height="18" rx="1"/>
-                <path d="M15 2 L15 7 L20 7 L17 2 Z" opacity="0.8"/>
-                <rect x="5" y="5" width="8" height="1.5" fill="white" opacity="0.9"/>
-              </svg>
-              <div>
-                <div style="font-weight: bold; margin-bottom: 2px;">PDF Estándar (A4)</div>
-                <div style="font-size: 12px; opacity: 0.9;">PDF profesional tamaño carta con diseño completo</div>
-              </div>
-            </button>
-
-            <!-- PDF Compacto -->
-            <button onclick="selectPrintOption('pdf-compact')" style="
-              background: linear-gradient(45deg, #9b59b6, #8e44ad); color: white; border: none;
-              padding: 16px 20px; border-radius: 12px; font-size: 14px; cursor: pointer;
-              transition: all 0.3s ease; text-align: left; display: flex; align-items: center; gap: 15px;
-              box-shadow: 0 4px 15px rgba(155, 89, 182, 0.3);
-            " onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 6px 20px rgba(155, 89, 182, 0.4)'" 
-               onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 15px rgba(155, 89, 182, 0.3)'">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
-                <rect x="2" y="6" width="18" height="12" rx="1"/>
-                <path d="M18 6 L18 10 L22 10 L20 6 Z" opacity="0.8"/>
-                <rect x="4" y="8" width="10" height="1" fill="white" opacity="0.9"/>
-              </svg>
-              <div>
-                <div style="font-weight: bold; margin-bottom: 2px;">PDF Compacto (A5)</div>
-                <div style="font-size: 12px; opacity: 0.9;">Formato horizontal compacto, ideal para archivos</div>
-              </div>
-            </button>
-
-            <!-- Vista Previa -->
-            <button onclick="selectPrintOption('preview-pdf')" style="
-              background: linear-gradient(45deg, #f39c12, #e67e22); color: white; border: none;
-              padding: 16px 20px; border-radius: 12px; font-size: 14px; cursor: pointer;
-              transition: all 0.3s ease; text-align: left; display: flex; align-items: center; gap: 15px;
-              box-shadow: 0 4px 15px rgba(243, 156, 18, 0.3);
-            " onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 6px 20px rgba(243, 156, 18, 0.4)'" 
-               onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 15px rgba(243, 156, 18, 0.3)'">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                <circle cx="12" cy="12" r="8" stroke-width="1.5"/>
-                <circle cx="12" cy="12" r="3" fill="currentColor"/>
-              </svg>
-              <div>
-                <div style="font-weight: bold; margin-bottom: 2px;">Vista Previa PDF</div>
-                <div style="font-size: 12px; opacity: 0.9;">Ver PDF en nueva ventana antes de decidir</div>
-              </div>
-            </button>
-
-            <!-- Impresión Estándar -->
-            <button onclick="selectPrintOption('standard')" style="
-              background: linear-gradient(45deg, #95a5a6, #7f8c8d); color: white; border: none;
-              padding: 16px 20px; border-radius: 12px; font-size: 14px; cursor: pointer;
-              transition: all 0.3s ease; text-align: left; display: flex; align-items: center; gap: 15px;
-              box-shadow: 0 4px 15px rgba(149, 165, 166, 0.3);
-            " onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 6px 20px rgba(149, 165, 166, 0.4)'" 
-               onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 15px rgba(149, 165, 166, 0.3)'">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
-                <rect x="4" y="3" width="16" height="10" rx="1"/>
-                <rect x="2" y="13" width="20" height="6" rx="1"/>
-              </svg>
-              <div>
-                <div style="font-weight: bold; margin-bottom: 2px;">Impresión Estándar</div>
-                <div style="font-size: 12px; opacity: 0.9;">Usar impresora predeterminada del sistema</div>
-              </div>
-            </button>
-          </div>
-
-          <button onclick="selectPrintOption('cancel')" style="
-            background: rgba(255,255,255,0.1); color: white;
-            border: 2px solid rgba(255,255,255,0.3);
-            padding: 12px 25px; border-radius: 20px; font-size: 14px;
-            cursor: pointer; transition: all 0.3s ease;
-            display: flex; align-items: center; gap: 8px; margin: 0 auto;
-          ">Cancelar</button>
-        </div>
-      </div>
-
-      <style>
-        @keyframes modalFadeIn {
-          from { opacity: 0; }
-          to { opacity: 1; }
-        }
-        @keyframes modalSlideIn {
-          from { opacity: 0; transform: translateY(30px) scale(0.9); }
-          to { opacity: 1; transform: translateY(0) scale(1); }
-        }
-      </style>
-    `;
-
-    // Agregar modal al DOM
-    document.body.insertAdjacentHTML('beforeend', modalHTML);
-
-    // Función global para manejar selección
-    window.selectPrintOption = (option) => {
-      const modal = document.getElementById('print-options-modal');
-      if (modal) modal.remove();
-      delete window.selectPrintOption;
-      resolve(option);
-    };
-
-    // Cerrar con ESC
-    const handleEsc = (e) => {
-      if (e.key === 'Escape') {
-        const modal = document.getElementById('print-options-modal');
-        if (modal) modal.remove();
-        document.removeEventListener('keydown', handleEsc);
-        delete window.selectPrintOption;
-        resolve('cancel');
-      }
-    };
-    document.addEventListener('keydown', handleEsc);
-  });
-}
-
-// Función para manejar impresión térmica
-async function handleThermalPrint() {
-  showInfo("Impresión térmica", "Enviando a impresora térmica...");
-  
-  if (window.thermalPrinter) {
-    const thermalResult = await window.thermalPrinter.printTicket();
+function newTicket() {
+  if (confirm('¿Desea crear un nuevo ticket?\n\nSe perderán todos los datos actuales.')) {
+    clearTicketForm();
+    resetTicketState();
+    updateTicketStatus(TICKET_STATES.DRAFT);
     
-    if (thermalResult) {
-      showSuccess("¡Impreso!", "Ticket enviado a impresora térmica exitosamente");
-      
-      if (confirm("¿Desea limpiar el formulario para un nuevo ticket?")) {
-        clearTicketForm();
-      }
-      return;
+    // Restaurar efectos visuales
+    const ticketPanel = document.querySelector(".ticket-panel");
+    if (ticketPanel) {
+      ticketPanel.style.opacity = '';
+      ticketPanel.style.filter = '';
     }
+    
+    showInfo("Nuevo ticket", "Formulario preparado para nuevo ticket");
   }
-  
-  // Fallback a impresión estándar
-  showWarning("Térmica no disponible", "Usando impresión estándar como alternativa");
-  await handleStandardPrint();
 }
 
-// Función para manejar impresión estándar
-async function handleStandardPrint() {
-  showInfo("Impresión estándar", "Usando impresora del sistema...");
+function clearTicketForm() {
+  // Limpiar campos del formulario
+  document.getElementById("nombre").value = "";
+  document.getElementById("documento").value = "";
+  document.getElementById("telefono").value = "";
+  document.getElementById("emailCliente").value = "";
+  document.getElementById("adultos").value = "1";
+  document.getElementById("ninos").value = "0";
+  document.getElementById("precioPersonalizado").value = "";
   
-  const printContent = generateOptimizedPrintContent();
-  const printWindow = window.open('', '_blank', 'width=400,height=700');
+  // Resetear toggle de reserva
+  const toggle = document.getElementById("reservationToggle");
+  if (toggle) {
+    toggle.classList.remove("active");
+    isReservation = false;
+    document.getElementById('ticket-tipo-servicio').textContent = 'Nuevo Pasaje';
+  }
+
+  // Restablecer fecha a hoy
+  const today = new Date().toISOString().split("T")[0];
+  document.getElementById("fecha").value = today;
+
+  // Deseleccionar embarcación
+  document.querySelectorAll(".vessel-card").forEach((el) => {
+    el.classList.remove("selected");
+  });
   
-  printWindow.document.write(printContent);
-  printWindow.document.close();
+  // Resetear variables
+  selectedVessel = null;
+  vesselPrice = 0;
+  originalVesselPrice = 0;
+  customPrice = 0;
+  currentTicketCode = null;
+  ticketGenerated = false;
+  ticketPrinted = false;
+  ticketCancelled = false;
+
+  // Actualizar interfaz
+  updateTicket();
+  updateButtonStates();
   
-  printWindow.onload = () => {
-    setTimeout(() => {
-      printWindow.print();
-      printWindow.onafterprint = () => {
-        printWindow.close();
-        showSuccess("Ticket enviado", "Revise su impresora");
-        if (confirm("¿Desea crear un nuevo ticket?")) {
-          clearTicketForm();
-        }
-      };
-      setTimeout(() => {
-        if (!printWindow.closed) {
-          printWindow.close();
-          showInfo("Ventana cerrada", "Impresión cancelada o completada");
-        }
-      }, 30000);
-    }, 500);
+  // Limpiar QR
+  document.getElementById("qr-container").innerHTML = 
+    'Genere el ticket para ver QR';
+  document.getElementById("ticket-timestamp").textContent = 
+    "Vista previa - Ticket no generado";
+}
+
+// FUNCIONES DE ESTADO DEL TICKET
+function updateTicketStatus(status) {
+  const statusElement = document.getElementById("ticketStatus");
+  if (!statusElement) return;
+  
+  statusElement.textContent = status;
+  
+  // Remover clases anteriores
+  statusElement.classList.remove('generated', 'printed', 'cancelled');
+  
+  // Agregar clase según estado
+  switch (status) {
+    case TICKET_STATES.GENERATED:
+      statusElement.classList.add('generated');
+      break;
+    case TICKET_STATES.PRINTED:
+      statusElement.classList.add('printed');
+      break;
+    case TICKET_STATES.CANCELLED:
+      statusElement.classList.add('cancelled');
+      break;
+  }
+}
+
+// FUNCIÓN DE GENERACIÓN DE QR CODE
+function generateQRCode() {
+  const nombre = document.getElementById("nombre").value || "Sin nombre";
+  const documento = document.getElementById("documento").value || "Sin documento";
+  const fecha = document.getElementById("fecha").value || "Sin fecha";
+  const embarcacion = selectedVessel || "Sin embarcación";
+  const adultos = parseInt(document.getElementById("adultos").value) || 0;
+  const ninos = parseInt(document.getElementById("ninos").value) || 0;
+  const total = document.getElementById("ticket-total").textContent;
+
+  const qrData = {
+    codigo: currentTicketCode,
+    pasajero: nombre,
+    documento: documento,
+    fecha: fecha,
+    embarcacion: embarcacion,
+    adultos: adultos,
+    ninos: ninos,
+    total: total,
+    reserva: isReservation,
+    timestamp: new Date().toISOString(),
+    estado: ticketCancelled ? 'ANULADO' : 'ACTIVO'
   };
+
+  const qrString = JSON.stringify(qrData);
+  const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=${encodeURIComponent(qrString)}`;
+
+  const qrContainer = document.getElementById("qr-container");
+  qrContainer.innerHTML = `
+    <img src="${qrUrl}" alt="QR Code" class="qr-code-img" style="width: 64px; height: 64px; border-radius: 6px;"
+         onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+    <div class="qr-placeholder" style="display:none;">Error al generar QR</div>
+  `;
 }
 
-// Función para agregar botones de control mejorados
-function addPrinterControlButtons() {
-  if (document.getElementById('printer-controls')) return;
-
-  const header = document.querySelector('.header');
-  if (!header) return;
-
-  const controlsContainer = document.createElement('div');
-  controlsContainer.id = 'printer-controls';
-  controlsContainer.style.cssText = `
-    position: absolute; top: 15px; left: 20px;
-    display: flex; gap: 8px; align-items: center; flex-wrap: wrap;
-  `;
-
-  controlsContainer.innerHTML = `
-    <button onclick="connectThermalPrinter()" style="
-      background: linear-gradient(45deg, #27ae60, #2ecc71); color: white; border: none;
-      padding: 6px 12px; border-radius: 15px; font-size: 11px; cursor: pointer;
-      display: flex; align-items: center; gap: 6px; transition: all 0.3s ease;
-    ">🔌 Conectar Térmica</button>
-    
-    <button onclick="testThermalPrinter()" style="
-      background: linear-gradient(45deg, #3498db, #2980b9); color: white; border: none;
-      padding: 6px 12px; border-radius: 15px; font-size: 11px; cursor: pointer;
-      display: flex; align-items: center; gap: 6px; transition: all 0.3s ease;
-    ">🧪 Probar</button>
-    
-    <div style="width: 1px; height: 20px; background: rgba(255,255,255,0.3); margin: 0 5px;"></div>
-    
-    <select id="pdf-format-select" style="
-      background: rgba(255,255,255,0.1); color: white; border: 1px solid rgba(255,255,255,0.3);
-      padding: 4px 8px; border-radius: 10px; font-size: 10px; cursor: pointer;
-    ">
-      <option value="thermal">PDF Térmico</option>
-      <option value="standard">PDF Estándar</option>
-      <option value="compact">PDF Compacto</option>
-    </select>
-
-    <button onclick="previewSelectedPDF()" style="
-      background: linear-gradient(45deg, #f39c12, #e67e22); color: white; border: none;
-      padding: 6px 10px; border-radius: 12px; font-size: 10px; cursor: pointer;
-    ">👁️ Vista</button>
-
-    <button onclick="downloadSelectedPDF()" style="
-      background: linear-gradient(45deg, #e74c3c, #c0392b); color: white; border: none;
-      padding: 6px 10px; border-radius: 12px; font-size: 10px; cursor: pointer;
-    ">📄 PDF</button>
-
-    <div id="printer-status" style="
-      background: rgba(0,0,0,0.2); padding: 3px 8px; border-radius: 10px;
-      font-size: 9px; color: #ccc; margin-left: 5px;
-    ">Desconectada</div>
-  `;
-
-  header.appendChild(controlsContainer);
-}
-
-// Función para vista previa del formato seleccionado
-window.previewSelectedPDF = async () => {
-  const formatSelect = document.getElementById('pdf-format-select');
-  const format = formatSelect ? formatSelect.value : 'thermal';
-  return await previewTicketPDF(format);
-};
-
-// Función para descargar el formato seleccionado
-window.downloadSelectedPDF = async () => {
-  const formatSelect = document.getElementById('pdf-format-select');
-  const format = formatSelect ? formatSelect.value : 'thermal';
-  return await generateTicketPDF(format);
-};
-
-// Función para generar contenido optimizado para impresión
-function generateOptimizedPrintContent() {
+// FUNCIÓN DE CONTENIDO PARA IMPRESIÓN
+function generatePrintContent() {
   const nombre = document.getElementById("ticket-nombre").textContent;
   const documento = document.getElementById("ticket-documento").textContent;
   const fecha = document.getElementById("ticket-fecha").textContent;
@@ -650,6 +608,7 @@ function generateOptimizedPrintContent() {
   const total = document.getElementById("ticket-total").textContent;
   const codigo = document.getElementById("ticket-codigo").textContent;
   const tipoServicio = document.getElementById("ticket-tipo-servicio").textContent;
+  const timestamp = document.getElementById("ticket-timestamp").textContent;
 
   return `
     <!DOCTYPE html>
@@ -658,86 +617,102 @@ function generateOptimizedPrintContent() {
       <meta charset="UTF-8">
       <title>Ticket - ${codigo}</title>
       <style>
-        @page { margin: 10mm; size: 80mm auto; }
-        * { margin: 0; padding: 0; box-sizing: border-box; }
+        @page { 
+          margin: 5mm; 
+          size: 80mm auto; 
+        }
+        * { 
+          margin: 0; 
+          padding: 0; 
+          box-sizing: border-box; 
+        }
         body { 
           font-family: 'Courier New', monospace; 
-          font-size: 12px; 
-          line-height: 1.3;
+          font-size: 11px; 
+          line-height: 1.2;
           width: 100%;
           background: white;
+          color: black;
         }
         .ticket-container { 
           width: 100%; 
-          padding: 8px; 
-          border: 1px solid #000;
+          padding: 3mm; 
           background: white;
         }
         .header { 
           text-align: center; 
-          border-bottom: 1px solid #000; 
-          padding-bottom: 8px; 
-          margin-bottom: 8px; 
+          border-bottom: 2px dashed #000; 
+          padding-bottom: 3mm; 
+          margin-bottom: 3mm; 
         }
         .title { 
-          font-size: 14px; 
+          font-size: 13px; 
           font-weight: bold; 
-          margin-bottom: 2px; 
+          margin-bottom: 1mm; 
         }
         .subtitle { 
-          font-size: 10px; 
+          font-size: 9px; 
         }
         .field { 
           display: flex; 
           justify-content: space-between; 
-          margin-bottom: 3px; 
-          border-bottom: 1px dotted #ccc;
-          padding-bottom: 2px;
+          margin-bottom: 1mm; 
+          padding-bottom: 1mm;
+          border-bottom: 1px dotted #999;
         }
         .label { 
           font-weight: bold; 
-          width: 40%;
+          width: 45%;
         }
         .value { 
-          width: 60%; 
+          width: 55%; 
           text-align: right; 
         }
         .total-section { 
-          margin-top: 8px; 
-          padding-top: 8px; 
-          border-top: 2px solid #000; 
+          margin: 3mm 0; 
+          padding: 3mm; 
+          border: 2px solid #000; 
           text-align: center; 
+          background: #f5f5f5;
         }
         .total-label { 
-          font-size: 12px; 
+          font-size: 11px; 
           font-weight: bold; 
         }
         .total-amount { 
           font-size: 16px; 
           font-weight: bold; 
-          margin-top: 2px; 
+          margin-top: 1mm; 
         }
         .footer { 
-          margin-top: 8px; 
-          padding-top: 8px; 
-          border-top: 1px solid #000; 
+          margin-top: 3mm; 
+          padding-top: 3mm; 
+          border-top: 1px dashed #000; 
           text-align: center; 
           font-size: 8px; 
         }
-        .qr-section {
+        .status {
           text-align: center;
-          margin: 8px 0;
-          padding: 4px;
-          border: 1px solid #ddd;
+          font-weight: bold;
+          padding: 2mm;
+          margin: 2mm 0;
+          border: 1px solid #000;
+          ${ticketCancelled ? 'background: #ffebee; color: #c62828;' : 'background: #e8f5e8; color: #2e7d32;'}
         }
       </style>
     </head>
     <body>
       <div class="ticket-container">
         <div class="header">
-          <div class="title">🚢 EMBARCACIONES GUATAPÉ</div>
-          <div class="subtitle">Nautica Guatapé S.A.S</div>
+          <div class="title">SISTEMA DE TRANSPORTE FLUVIAL</div>
           <div class="subtitle">Embalse de Guatapé</div>
+        </div>
+        
+        ${ticketCancelled ? '<div class="status">*** TICKET ANULADO ***</div>' : '<div class="status">TICKET VÁLIDO</div>'}
+        
+        <div class="field">
+          <span class="label">Código:</span>
+          <span class="value">${codigo}</span>
         </div>
         
         <div class="field">
@@ -775,19 +750,22 @@ function generateOptimizedPrintContent() {
           <span class="value">${pasajeros}</span>
         </div>
         
+        ${!ticketCancelled ? `
         <div class="total-section">
           <div class="total-label">TOTAL A PAGAR</div>
           <div class="total-amount">${total}</div>
         </div>
-        
-        <div class="qr-section">
-          <div style="font-size: 10px; margin-bottom: 4px;">Código: ${codigo}</div>
-          <div style="font-size: 8px;">Generado: ${new Date().toLocaleString()}</div>
+        ` : `
+        <div class="total-section" style="background: #ffebee;">
+          <div class="total-label">TICKET ANULADO</div>
+          <div class="total-amount" style="color: #c62828;">SIN VALOR</div>
         </div>
+        `}
         
         <div class="footer">
-          <div>¡Gracias por viajar con nosotros!</div>
-          <div>www.embarcacionesguatape.com</div>
+          <div>${ticketCancelled ? '*** TICKET ANULADO ***' : 'CONSERVE ESTE TICKET'}</div>
+          <div>Guatapé - Antioquia</div>
+          <div>${timestamp}</div>
         </div>
       </div>
     </body>
@@ -795,27 +773,300 @@ function generateOptimizedPrintContent() {
   `;
 }
 
-// Inicializar controles al cargar la página
-document.addEventListener('DOMContentLoaded', function() {
-  setTimeout(() => {
-    addPrinterControlButtons();
+// ===========================
+// FUNCIONES DE VALIDACIÓN
+// Función para actualizar precios en las cards
+// ===========================
+
+function updateVesselCardPrices() {
+  const adultos = parseInt(document.getElementById("adultos").value) || 0;
+  const ninos = parseInt(document.getElementById("ninos").value) || 0;
+  const totalPersonas = adultos + ninos;
+  
+  if (totalPersonas === 0) return;
+  
+  // Actualizar cada card
+  document.querySelectorAll('.vessel-card').forEach(card => {
+    const vesselType = card.dataset.type;
+    const priceElement = card.querySelector('.vessel-price');
+    let totalPrice = 0;
+    let pricePerPerson = 0;
     
-    // Actualizar estado cada 5 segundos
-    setInterval(() => {
-      const statusElement = document.getElementById('printer-status');
-      if (statusElement && window.thermalPrinter) {
-        const status = window.thermalPrinter.getConnectionStatus();
-        if (status.isConnected) {
-          statusElement.textContent = '🟢 Conectada';
-          statusElement.style.color = '#00ff88';
-        } else if (status.hasWebSerial) {
-          statusElement.textContent = '🟡 Disponible';
-          statusElement.style.color = '#ffd700';
+    if (isReservation) {
+      pricePerPerson = Math.round(10000 / adultos);
+      priceElement.textContent = `$${pricePerPerson.toLocaleString()}`;
+      return;
+    }
+    
+    switch (vesselType) {
+      case 'lancha':
+        pricePerPerson = 30000;
+        priceElement.textContent = `${pricePerPerson.toLocaleString()}`;
+        break;
+        
+      case 'deportiva':
+        if (adultos <= 4) {
+          pricePerPerson = Math.round(250000 / adultos);
+        } else if (adultos <= 6) {
+          pricePerPerson = Math.round(300000 / adultos);
         } else {
-          statusElement.textContent = '🔴 No compatible';
-          statusElement.style.color = '#ff6b6b';
+          pricePerPerson = 50000;
         }
-      }
-    }, 5000);
-  }, 1000);
-});
+        priceElement.textContent = `${pricePerPerson.toLocaleString()}`;
+        break;
+        
+      case 'planchon':
+        if (adultos <= 10) {
+          pricePerPerson = Math.round(350000 / adultos);
+        } else if (adultos <= 15) {
+          pricePerPerson = Math.round(450000 / adultos);
+        } else if (adultos <= 20) {
+          pricePerPerson = Math.round(500000 / adultos);
+        } else {
+          pricePerPerson = 25000;
+        }
+        priceElement.textContent = `${pricePerPerson.toLocaleString()}`;
+        break;
+        
+      case 'barco':
+        if (adultos <= 19) {
+          pricePerPerson = 30000;
+        } else if (adultos <= 30) {
+          pricePerPerson = 25000;
+        } else {
+          pricePerPerson = 20000;
+        }
+        priceElement.textContent = `${pricePerPerson.toLocaleString()}`;
+        break;
+        
+      case 'yate':
+        if (adultos <= 10) {
+          pricePerPerson = Math.round(400000 / adultos);
+        } else {
+          pricePerPerson = 30000;
+        }
+        priceElement.textContent = `${pricePerPerson.toLocaleString()}`;
+        break;
+        
+      case 'carguero':
+        totalPrice = Math.ceil(adultos / 5) * 200000;
+        pricePerPerson = Math.round(totalPrice / adultos);
+        priceElement.textContent = `${pricePerPerson.toLocaleString()}`;
+        break;
+    }
+  });
+}
+
+// ===========================
+// FUNCIONES DE VALIDACIÓN
+// ===========================
+
+// Función principal de validación
+function validateForm() {
+  const errors = [];
+  
+  // Validar teléfono
+  const telefono = document.getElementById("telefono").value;
+  if (telefono && !validatePhone(telefono)) {
+    errors.push("El teléfono debe tener exactamente 10 dígitos");
+  }
+  
+  // Validar correo
+  const email = document.getElementById("emailCliente").value;
+  if (email && !validateEmail(email)) {
+    errors.push("Ingrese un correo electrónico válido");
+  }
+  
+  // Validar documento
+  const documento = document.getElementById("documento").value;
+  if (documento && !validateDocument(documento)) {
+    errors.push("El documento debe contener solo números");
+  }
+  
+  return {
+    isValid: errors.length === 0,
+    errors: errors
+  };
+}
+
+// Función para formatear teléfono automáticamente
+function formatPhone(value) {
+  // Remover todo lo que no sea número
+  const numbers = value.replace(/\D/g, '');
+  
+  // Limitar a 10 dígitos
+  const limited = numbers.slice(0, 10);
+  
+  // Aplicar formato XXX-XXX-XXXX
+  if (limited.length >= 6) {
+    return `${limited.slice(0, 3)}-${limited.slice(3, 6)}-${limited.slice(6)}`;
+  } else if (limited.length >= 3) {
+    return `${limited.slice(0, 3)}-${limited.slice(3)}`;
+  } else {
+    return limited;
+  }
+}
+
+// Validar teléfono (10 dígitos con o sin guiones)
+function validatePhone(phone) {
+  // Remover guiones para validar solo números
+  const cleanPhone = phone.replace(/-/g, '');
+  const phoneRegex = /^\d{10}$/;
+  return phoneRegex.test(cleanPhone);
+}
+
+// Validar correo electrónico
+function validateEmail(email) {
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  return emailRegex.test(email);
+}
+
+// Validar documento (solo números)
+function validateDocument(document) {
+  const documentRegex = /^\d+$/;
+  return documentRegex.test(document);
+}
+
+// Función para mostrar errores de validación
+function showValidationErrors(errors) {
+  if (errors.length > 0) {
+    const errorMessage = errors.join('\n• ');
+    showError('Datos incorrectos', `Por favor corrija:\n• ${errorMessage}`);
+    return false;
+  }
+  return true;
+}
+
+// Validación en tiempo real para cada campo
+function setupFieldValidation() {
+  // Validación de teléfono en tiempo real
+  document.getElementById("telefono").addEventListener("input", function(e) {
+    const value = e.target.value;
+    if (value && !validatePhone(value)) {
+      e.target.style.borderColor = '#ef4444';
+      e.target.style.boxShadow = '0 0 0 2px rgba(239, 68, 68, 0.1)';
+    } else {
+      e.target.style.borderColor = '';
+      e.target.style.boxShadow = '';
+    }
+  });
+  
+  // Validación de correo en tiempo real
+  document.getElementById("emailCliente").addEventListener("input", function(e) {
+    const value = e.target.value;
+    if (value && !validateEmail(value)) {
+      e.target.style.borderColor = '#ef4444';
+      e.target.style.boxShadow = '0 0 0 2px rgba(239, 68, 68, 0.1)';
+    } else {
+      e.target.style.borderColor = '';
+      e.target.style.boxShadow = '';
+    }
+  });
+  
+  // Validación de documento en tiempo real
+  document.getElementById("documento").addEventListener("input", function(e) {
+    const value = e.target.value;
+    if (value && !validateDocument(value)) {
+      e.target.style.borderColor = '#ef4444';
+      e.target.style.boxShadow = '0 0 0 2px rgba(239, 68, 68, 0.1)';
+    } else {
+      e.target.style.borderColor = '';
+      e.target.style.boxShadow = '';
+    }
+  });
+  
+  // Permitir solo números en documento
+  document.getElementById("documento").addEventListener("keypress", function(e) {
+    if (!/\d/.test(e.key) && !['Backspace', 'Delete', 'Tab', 'Enter'].includes(e.key)) {
+      e.preventDefault();
+    }
+  });
+  
+  // Permitir números y guiones en teléfono
+  document.getElementById("telefono").addEventListener("keypress", function(e) {
+    if (!/[\d-]/.test(e.key) && !['Backspace', 'Delete', 'Tab', 'Enter'].includes(e.key)) {
+      e.preventDefault();
+    }
+  });
+  
+  // Limitar teléfono a máximo 12 caracteres (incluyendo guiones)
+  document.getElementById("telefono").addEventListener("input", function(e) {
+    if (e.target.value.length > 12) {
+      e.target.value = e.target.value.slice(0, 12);
+    }
+  });
+}
+
+// FUNCIÓN MODIFICADA PARA GENERAR TICKET CON VALIDACIÓN
+function generateTicketWithValidation() {
+  const nombre = document.getElementById("nombre").value;
+  const documento = document.getElementById("documento").value;
+  const fecha = document.getElementById("fecha").value;
+
+  // Validar campos obligatorios
+  if (!nombre || !documento || !selectedVessel || !fecha) {
+    showError('Datos incompletos', 'Complete todos los campos obligatorios: Nombre, Documento, Embarcación y Fecha');
+    return;
+  }
+
+  // Validar formato de campos opcionales
+  const validation = validateForm();
+  if (!validation.isValid) {
+    showValidationErrors(validation.errors);
+    return;
+  }
+
+  if (ticketCancelled) {
+    showError('Error', 'No se puede generar un ticket anulado');
+    return;
+  }
+
+  try {
+    // Generar timestamp
+    const now = new Date();
+    document.getElementById("ticket-timestamp").textContent = 
+      `Generado: ${now.toLocaleDateString('es-CO')} ${now.toLocaleTimeString('es-CO')}`;
+
+    // Generar QR Code
+    generateQRCode();
+    
+    // Actualizar estados
+    ticketGenerated = true;
+    ticketPrinted = false;
+    
+    // Actualizar interfaz
+    updateButtonStates();
+    updateTicketStatus(TICKET_STATES.GENERATED);
+    
+    showSuccess("¡Ticket generado!", "El ticket se ha creado exitosamente");
+    
+  } catch (error) {
+    console.error('Error generando ticket:', error);
+    showError('Error del sistema', 'No se pudo generar el ticket. Intente nuevamente');
+  }
+}
+
+// ===========================
+// 🔗 FUNCIONES DE INTEGRACIÓN CON MODALES
+// ===========================
+
+/**
+ * Función llamada desde el modal para imprimir directamente
+ */
+window.printFromModal = function() {
+    console.log('🖨️ Imprimiendo desde modal...');
+    directPrint();
+};
+
+/**
+ * Función llamada desde el modal para generar PDF
+ */
+window.generatePDFFromModal = function(format = 'thermal') {
+    console.log('📄 Generando PDF desde modal...', format);
+    
+    if (typeof generateTicketPDF !== 'undefined') {
+        generateTicketPDF(format);
+    } else {
+        showError('PDF no disponible', 'El generador de PDF no está cargado');
+    }
+};
