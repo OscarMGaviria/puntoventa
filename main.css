@@ -591,13 +591,13 @@ FORMULARIOS COMPACTOS
 /* ===========================
            RESPONSIVE MEJORADO
            =========================== */
-@media (max-width: 1400px) {
+@media (max-width: 900px) {
   .vessel-grid {
     grid-template-columns: repeat(2, 1fr);
   }
 }
 
-@media (max-width: 1200px) {
+@media (max-width: 900px) {
   .main-container {
     grid-template-columns: 1fr;
     grid-template-rows: auto auto;

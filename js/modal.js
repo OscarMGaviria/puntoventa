@@ -397,9 +397,9 @@ class ModalSystem {
 
     // Opciones de PDF
     actions.push({
-      text: '<i class="fas fa-file-pdf"></i> Descargar PDF',
-      type: "secondary",
-      action: () => this.handlePDFDownload(),
+      text: '<i class="fas fa-file-pdf"></i> PDF Térmico (58mm)',
+      type: "secondary", 
+      action: () => this.downloadPDF("thermal"),
     });
 
     // Impresión web tradicional (si no hay directa disponible)
@@ -518,7 +518,7 @@ class ModalSystem {
    */
   handlePDFDownload() {
     console.log('📄 Manejando descarga de PDF...');
-    this.showPDFFormatSelectionModal();
+    this.downloadPDF("thermal");
   }
 
   /**
