@@ -136,10 +136,9 @@
                     <i class="fas fa-ticket-alt"></i> Generar
                 </button>
                 <!-- BOTÓN DE IMPRESIÓN CORREGIDO PARA EVITAR CONFLICTO -->
-                <a href="intent://print?text=Hola%20Mundo#Intent;scheme=rawbt;package=ru.a402d.rawbtprinter;end;" 
-                   class="action-btn print">
-                    <i class="fas fa-print"></i> Imprimir
-                </a>
+                <button class="action-btn print disabled" id="printBtn" onclick="showPrintModal()" disabled>
+                    <i class="fas fa-print"></i> Imprimir 
+                </button>
                 <button class="action-btn cancel disabled" id="cancelBtn" onclick="cancelTicket()" disabled>
                     <i class="fas fa-times-circle"></i> Anular
                 </button>
