@@ -272,7 +272,7 @@ function updateTicket() {
           total = totalPersonas * 30000;
           break;
           
-        case 'deportiva': // Lanchas Deportivas
+        case 'deportiva': // Lanchas Deportivas (SIN CAMBIOS)
           if (totalPersonas <= 4) {
             total = 250000;
           } else if (totalPersonas <= 6) {
@@ -283,41 +283,28 @@ function updateTicket() {
           break;
           
         case 'planchon': // Planchones
-          if (totalPersonas <= 10) {
-            total = 350000;
-          } else if (totalPersonas <= 15) {
-            total = 450000;
-          } else if (totalPersonas <= 20) {
-            total = 500000;
-          } else {
-            total = totalPersonas * 25000;
-          }
+          total = totalPersonas * 30000;
           break;
           
         case 'barco': // Barcos
-          if (totalPersonas <= 19) {
-            total = totalPersonas * 30000;
-          } else if (totalPersonas <= 30) {
-            total = totalPersonas * 25000;
-          } else {
-            total = totalPersonas * 20000;
-          }
+          total = totalPersonas * 30000;
           break;
           
         case 'yate': // Yates
           if (totalPersonas <= 10) {
             total = 400000;
           } else {
-            total = totalPersonas * 30000;
+            total = 400000 + ((totalPersonas - 10) * 30000);
           }
           break;
           
-        case 'carguero': // Carguero
-          total = Math.ceil(totalPersonas / 5) * 200000;
+        case 'carguero': // Carguero (SIN CAMBIOS)
+          total = Math.ceil(totalPersonas / 6) * 200000;
           break;
           
         default:
           total = 0;
+
       }
     }
     
@@ -1069,4 +1056,5 @@ window.generatePDFFromModal = function(format = 'thermal') {
     } else {
         showError('PDF no disponible', 'El generador de PDF no está cargado');
     }
+
 };
