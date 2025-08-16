@@ -1,403 +1,550 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sistema POS - Embarcaciones Guatapé</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="main.css">
-    
+   <meta charset="UTF-8">
+   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+   <title>Sistema POS - Embarcaciones Guatapé</title>
+   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+   <link rel="stylesheet" href="main.css">
 </head>
 <body>
-    <!-- SISTEMA PRINCIPAL -->
-    <div class="main-container">
-        <!-- PANEL POS -->
-        <div class="pos-panel">
-            <!-- INFORMACIÓN DEL PASAJERO -->
-            <div class="section">
-                <h2 class="section-title"><i class="fas fa-user"></i> Información del Pasajero</h2>
-                <div class="passenger-info-grid">
-                    <div class="form-group">
-                        <label class="form-label">Nombre Completo</label>
-                        <input type="text" class="form-input" id="nombre" placeholder="Juan Pérez García">
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Documento</label>
-                        <input type="text" class="form-input" id="documento" placeholder="12345678">
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Email</label>
-                        <input type="email" class="form-input" id="emailCliente" placeholder="ejemplo@email.com">
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Teléfono</label>
-                        <input type="tel" class="form-input" id="telefono" placeholder="+57 300 123 4567">
-                    </div>
-                </div>
-            </div>
+   <!-- PANTALLA DE LOGIN -->
+   <div id="loginScreen" class="login-screen">
+       <div class="login-container">
+           <div class="login-header">
+               <i class="fas fa-anchor"></i>
+               <h1>Embarcaciones Guatapé</h1>
+               <p>Sistema POS - Acceso Autorizado</p>
+           </div>
+           
+           <form id="loginForm" class="login-form">
+               <div class="form-group">
+                   <label for="email">Correo Electrónico</label>
+                   <input type="email" id="email" required>
+               </div>
+               
+               <div class="form-group">
+                   <label for="password">Contraseña</label>
+                   <div class="password-input">
+                       <input type="password" id="password" required>
+                       <button type="button" id="togglePassword" onclick="togglePassword()">👁️</button>
+                   </div>
+               </div>
+               
+               <div id="errorMessage" class="error-message"></div>
+               
+               <button type="submit" id="loginBtn" class="login-btn">
+                   <span id="loadingSpinner" class="loading-spinner"></span>
+                   <span id="btnText">Iniciar Sesión</span>
+               </button>
+           </form>
+           
+           <div class="login-footer">
+               <p>Solo personal autorizado</p>
+           </div>
+       </div>
+   </div>
 
-            <!-- DETALLES DEL VIAJE -->
-            <div class="section">
-                <h2 class="section-title"><i class="fas fa-calendar-alt"></i> Detalles del Viaje</h2>
-                <div class="form-grid">
-                    <div class="form-group">
-                        <label class="form-label">Fecha de Viaje</label>
-                        <input type="date" class="form-input" id="fecha">
-                    </div>
-                    <div class="form-group1">
-                        <label class="form-label"><i class="fas fa-users"></i> Adultos</label>
-                        <div class="counter-group">
-                            <button class="counter-btn" onclick="decrementCounter('adultos')"><i class="fas fa-minus"></i></button>
-                            <input type="number" class="counter-input" id="adultos" value="1" min="1" max="100">
-                            <button class="counter-btn" onclick="incrementCounter('adultos')"><i class="fas fa-plus"></i></button>
-                        </div>
-                    </div>
-                    <div class="form-group1">
-                        <label class="form-label">Niños (0-5 años)</label>
-                        <div class="counter-group">
-                            <button class="counter-btn" onclick="decrementCounter('ninos')"><i class="fas fa-minus"></i></button>
-                            <input type="number" class="counter-input" id="ninos" value="0" min="0" max="10">
-                            <button class="counter-btn" onclick="incrementCounter('ninos')"><i class="fas fa-plus"></i></button>
-                        </div>
-                    </div>
-                </div>
+   <!-- SISTEMA PRINCIPAL -->
+   <div id="mainSystem" class="main-system">
+       <div class="main-container">
+           <!-- PANEL POS -->
+           <div class="pos-panel">
+               <!-- INFORMACIÓN DEL PASAJERO -->
+               <div class="section">
+                   <h2 class="section-title"><i class="fas fa-user"></i> Información del Pasajero</h2>
+                   <div class="passenger-info-grid">
+                       <div class="form-group">
+                           <label class="form-label">Nombre Completo</label>
+                           <input type="text" class="form-input" id="nombre" placeholder="Juan Pérez García">
+                       </div>
+                       <div class="form-group">
+                           <label class="form-label">Documento</label>
+                           <input type="text" class="form-input" id="documento" placeholder="12345678">
+                       </div>
+                       <div class="form-group">
+                           <label class="form-label">Email</label>
+                           <input type="email" class="form-input" id="emailCliente" placeholder="ejemplo@email.com">
+                       </div>
+                       <div class="form-group">
+                           <label class="form-label">Teléfono</label>
+                           <input type="tel" class="form-input" id="telefono" placeholder="+57 300 123 4567">
+                       </div>
+                   </div>
+               </div>
 
-                <!-- CONFIGURACIONES ESPECIALES -->
-                <div class="special-controls" style="margin-top: 16px;">
+               <!-- DETALLES DEL VIAJE -->
+               <div class="section">
+                   <h2 class="section-title"><i class="fas fa-calendar-alt"></i> Detalles del Viaje</h2>
+                   <div class="form-grid">
+                       <div class="form-group">
+                           <label class="form-label">Fecha de Viaje</label>
+                           <input type="date" class="form-input" id="fecha">
+                       </div>
+                       <div class="form-group1">
+                           <label class="form-label"><i class="fas fa-users"></i> Adultos</label>
+                           <div class="counter-group">
+                               <button class="counter-btn" onclick="decrementCounter('adultos')"><i class="fas fa-minus"></i></button>
+                               <input type="number" class="counter-input" id="adultos" value="1" min="1" max="100">
+                               <button class="counter-btn" onclick="incrementCounter('adultos')"><i class="fas fa-plus"></i></button>
+                           </div>
+                       </div>
+                       <div class="form-group1">
+                           <label class="form-label">Niños (0-5 años)</label>
+                           <div class="counter-group">
+                               <button class="counter-btn" onclick="decrementCounter('ninos')"><i class="fas fa-minus"></i></button>
+                               <input type="number" class="counter-input" id="ninos" value="0" min="0" max="10">
+                               <button class="counter-btn" onclick="incrementCounter('ninos')"><i class="fas fa-plus"></i></button>
+                           </div>
+                       </div>
+                   </div>
 
-                    <div class="form-group">
-                        <label class="form-label"><i class="fas fa-dollar-sign"></i> Precio Personalizado</label>
-                        <div class="price-editor">
-                            <input type="number" class="form-input" id="precioPersonalizado" placeholder="Precio" min="0" step="1000" oninput="applyCustomPrice()">
-                            <button class="btn-reset" onclick="resetPrice()" title="Restaurar precio original"><i class="fas fa-undo"></i></button>
-                        </div>
-                    </div>
-                </div>
-            </div>
+                   <!-- CONFIGURACIONES ESPECIALES -->
+                   <div class="special-controls" style="margin-top: 16px;">
+                       <div class="form-group">
+                           <label class="form-label"><i class="fas fa-dollar-sign"></i> Precio Personalizado</label>
+                           <div class="price-editor">
+                               <input type="number" class="form-input" id="precioPersonalizado" placeholder="Precio" min="0" step="1000" oninput="applyCustomPrice()">
+                               <button class="btn-reset" onclick="resetPrice()" title="Restaurar precio original"><i class="fas fa-undo"></i></button>
+                           </div>
+                       </div>
+                   </div>
+               </div>
 
-            <!-- TIPO DE EMBARCACIÓN -->
-            <div class="section">
-                <h2 class="section-title"><i class="fas fa-ship"></i> Tipo de Embarcación</h2>
-                <div class="vessel-grid">
-                    <div class="vessel-card" data-type="lancha" data-price="30000" onclick="selectVessel(this)">
-                        <div class="vessel-icon"><i class="fas fa-ship"></i></div>
-                        <div class="vessel-info">
-                            <div class="vessel-name">Lancha Taxi</div>
-                            <div class="vessel-price">$30,000</div>
-                        </div>
-                        <div class="vessel-selected"><i class="fas fa-check"></i></div>
-                    </div>
-                    <div class="vessel-card" data-type="deportiva" data-price="250000" onclick="selectVessel(this)">
-                        <div class="vessel-icon"><i class="fas fa-rocket"></i></div>
-                        <div class="vessel-info">
-                            <div class="vessel-name">Deportiva</div>
-                            <div class="vessel-price">$250,000</div>
-                        </div>
-                        <div class="vessel-selected"><i class="fas fa-check"></i></div>
-                    </div>
-                    <div class="vessel-card" data-type="planchon" data-price="350000" onclick="selectVessel(this)">
-                        <div class="vessel-icon"><i class="fas fa-dharmachakra"></i></div>
-                        <div class="vessel-info">
-                            <div class="vessel-name">Planchón</div>
-                            <div class="vessel-price">$350,000</div>
-                        </div>
-                        <div class="vessel-selected"><i class="fas fa-check"></i></div>
-                    </div>
-                    <div class="vessel-card" data-type="carguero" data-price="200000" onclick="selectVessel(this)">
-                        <div class="vessel-icon"><i class="fas fa-anchor"></i></div>
-                        <div class="vessel-info">
-                            <div class="vessel-name">Carguero</div>
-                            <div class="vessel-price">$200,000</div>
-                        </div>
-                        <div class="vessel-selected"><i class="fas fa-check"></i></div>
-                    </div>
-                    <div class="vessel-card" data-type="barco" data-price="30000" onclick="selectVessel(this)">
-                        <div class="vessel-icon"><i class="fas fa-ferry"></i></div>
-                        <div class="vessel-info">
-                            <div class="vessel-name">Barco</div>
-                            <div class="vessel-price">$30,000</div>
-                        </div>
-                        <div class="vessel-selected"><i class="fas fa-check"></i></div>
-                    </div>
-                    <div class="vessel-card" data-type="yate" data-price="400000" onclick="selectVessel(this)">
-                        <div class="vessel-icon"><i class="fas fa-sailboat"></i></div>
-                        <div class="vessel-info">
-                            <div class="vessel-name">Yate</div>
-                            <div class="vessel-price">$400,000</div>
-                        </div>
-                        <div class="vessel-selected"><i class="fas fa-check"></i></div>
-                    </div>
-                </div>
-            </div>
+               <!-- TIPO DE EMBARCACIÓN -->
+               <div class="section">
+                   <h2 class="section-title"><i class="fas fa-ship"></i> Tipo de Embarcación</h2>
+                   <div class="vessel-grid">
+                       <div class="vessel-card" data-type="lancha" data-price="30000" onclick="selectVessel(this)">
+                           <div class="vessel-icon"><i class="fas fa-ship"></i></div>
+                           <div class="vessel-info">
+                               <div class="vessel-name">Lancha Taxi</div>
+                               <div class="vessel-price">$30,000</div>
+                           </div>
+                           <div class="vessel-selected"><i class="fas fa-check"></i></div>
+                       </div>
+                       <div class="vessel-card" data-type="deportiva" data-price="250000" onclick="selectVessel(this)">
+                           <div class="vessel-icon"><i class="fas fa-rocket"></i></div>
+                           <div class="vessel-info">
+                               <div class="vessel-name">Deportiva</div>
+                               <div class="vessel-price">$250,000</div>
+                           </div>
+                           <div class="vessel-selected"><i class="fas fa-check"></i></div>
+                       </div>
+                       <div class="vessel-card" data-type="planchon" data-price="350000" onclick="selectVessel(this)">
+                           <div class="vessel-icon"><i class="fas fa-dharmachakra"></i></div>
+                           <div class="vessel-info">
+                               <div class="vessel-name">Planchón</div>
+                               <div class="vessel-price">$350,000</div>
+                           </div>
+                           <div class="vessel-selected"><i class="fas fa-check"></i></div>
+                       </div>
+                       <div class="vessel-card" data-type="carguero" data-price="200000" onclick="selectVessel(this)">
+                           <div class="vessel-icon"><i class="fas fa-anchor"></i></div>
+                           <div class="vessel-info">
+                               <div class="vessel-name">Carguero</div>
+                               <div class="vessel-price">$200,000</div>
+                           </div>
+                           <div class="vessel-selected"><i class="fas fa-check"></i></div>
+                       </div>
+                       <div class="vessel-card" data-type="barco" data-price="30000" onclick="selectVessel(this)">
+                           <div class="vessel-icon"><i class="fas fa-ferry"></i></div>
+                           <div class="vessel-info">
+                               <div class="vessel-name">Barco</div>
+                               <div class="vessel-price">$30,000</div>
+                           </div>
+                           <div class="vessel-selected"><i class="fas fa-check"></i></div>
+                       </div>
+                       <div class="vessel-card" data-type="yate" data-price="400000" onclick="selectVessel(this)">
+                           <div class="vessel-icon"><i class="fas fa-sailboat"></i></div>
+                           <div class="vessel-info">
+                               <div class="vessel-name">Yate</div>
+                               <div class="vessel-price">$400,000</div>
+                           </div>
+                           <div class="vessel-selected"><i class="fas fa-check"></i></div>
+                       </div>
+                   </div>
+               </div>
 
-            <!-- BOTONES DE ACCIÓN -->
-            <div class="action-buttons">
-                <button class="action-btn generate" id="generateBtn" onclick="generateTicketWithValidation()">
-                    <i class="fas fa-ticket-alt"></i> Generar
-                </button>
-                <!-- BOTÓN DE IMPRESIÓN CORREGIDO PARA EVITAR CONFLICTO -->
-                <button class="action-btn print disabled" id="printBtn" onclick="showPrintModal()" disabled>
-                    <i class="fas fa-print"></i> Imprimir
-                </button>
-                <button class="action-btn cancel disabled" id="cancelBtn" onclick="cancelTicket()" disabled>
-                    <i class="fas fa-times-circle"></i> Anular
-                </button>
-                <button class="action-btn new" onclick="newTicket()">
-                    <i class="fas fa-plus-circle"></i> Nuevo
-                </button>
-            </div>
-        </div>
+               <!-- BOTONES DE ACCIÓN -->
+               <div class="action-buttons">
+                   <button class="action-btn generate" id="generateBtn" onclick="generateTicketWithValidation()">
+                       <i class="fas fa-ticket-alt"></i> Generar
+                   </button>
+                   <button class="action-btn print disabled" id="printBtn" onclick="showPrintModal()" disabled>
+                       <i class="fas fa-print"></i> Imprimir
+                   </button>
+                   <button class="action-btn cancel disabled" id="cancelBtn" onclick="cancelTicket()" disabled>
+                       <i class="fas fa-times-circle"></i> Anular
+                   </button>
+                   <button class="action-btn new" onclick="newTicket()">
+                       <i class="fas fa-plus-circle"></i> Nuevo
+                   </button>
+               </div>
+           </div>
 
-        <!-- PANEL DE TICKET -->
-        <div class="ticket-panel">
-            <div class="ticket-header">
-                <h1 class="ticket-title"><i class="fas fa-anchor"></i>SISTEMA DE TRANSPORTE FLUVIAL</h1>
-                <p class="ticket-subtitle">Embalse de Guatapé</p>
-                <div class="ticket-status" id="ticketStatus">BORRADOR</div>
-            </div>
+           <!-- PANEL DE TICKET -->
+           <div class="ticket-panel">
+               <div class="ticket-header">
+                   <h1 class="ticket-title"><i class="fas fa-anchor"></i>SISTEMA DE TRANSPORTE FLUVIAL</h1>
+                   <p class="ticket-subtitle">Embalse de Guatapé</p>
+                   <div class="ticket-status" id="ticketStatus">BORRADOR</div>
+               </div>
 
-            <div class="ticket-info">
-                <div class="ticket-field">
-                    <span class="field-label">Tipo de Servicio</span>
-                    <span class="field-value" id="ticket-tipo-servicio">Nuevo Pasaje</span>
-                </div>
-                <div class="ticket-field">
-                    <span class="field-label">Pasajero</span>
-                    <span class="field-value" id="ticket-nombre">-</span>
-                </div>
-                <div class="ticket-field">
-                    <span class="field-label">Documento</span>
-                    <span class="field-value" id="ticket-documento">-</span>
-                </div>
-                <div class="ticket-field">
-                    <span class="field-label">Fecha</span>
-                    <span class="field-value" id="ticket-fecha">-</span>
-                </div>
-                <div class="ticket-field">
-                    <span class="field-label">Hora</span>
-                    <span class="field-value" id="ticket-hora">-</span>
-                </div>
-                <div class="ticket-field">
-                    <span class="field-label">Embarcación</span>
-                    <span class="field-value" id="ticket-embarcacion">-</span>
-                </div>
-                <div class="ticket-field">
-                    <span class="field-label">Pasajeros</span>
-                    <span class="field-value" id="ticket-pasajeros">-</span>
-                </div>
-            </div>
+               <div class="ticket-info">
+                   <div class="ticket-field">
+                       <span class="field-label">Tipo de Servicio</span>
+                       <span class="field-value" id="ticket-tipo-servicio">Nuevo Pasaje</span>
+                   </div>
+                   <div class="ticket-field">
+                       <span class="field-label">Pasajero</span>
+                       <span class="field-value" id="ticket-nombre">-</span>
+                   </div>
+                   <div class="ticket-field">
+                       <span class="field-label">Documento</span>
+                       <span class="field-value" id="ticket-documento">-</span>
+                   </div>
+                   <div class="ticket-field">
+                       <span class="field-label">Fecha</span>
+                       <span class="field-value" id="ticket-fecha">-</span>
+                   </div>
+                   <div class="ticket-field">
+                       <span class="field-label">Hora</span>
+                       <span class="field-value" id="ticket-hora">-</span>
+                   </div>
+                   <div class="ticket-field">
+                       <span class="field-label">Embarcación</span>
+                       <span class="field-value" id="ticket-embarcacion">-</span>
+                   </div>
+                   <div class="ticket-field">
+                       <span class="field-label">Pasajeros</span>
+                       <span class="field-value" id="ticket-pasajeros">-</span>
+                   </div>
+               </div>
 
-            <div class="ticket-total">
-                <div class="total-label">TOTAL A PAGAR</div>
-                <div class="total-amount" id="ticket-total">$0</div>
-            </div>
+               <div class="ticket-total">
+                   <div class="total-label">TOTAL A PAGAR</div>
+                   <div class="total-amount" id="ticket-total">$0</div>
+               </div>
 
-            <div class="qr-section">
-                <div class="qr-placeholder" id="qr-container">
-                    Genere el ticket para ver QR
-                </div>
-                <div class="ticket-code">Código: <span id="ticket-codigo">-</span></div>
-            </div>
+               <div class="qr-section">
+                   <div class="qr-placeholder" id="qr-container">
+                       Genere el ticket para ver QR
+                   </div>
+                   <div class="ticket-code">Código: <span id="ticket-codigo">-</span></div>
+               </div>
 
-            <div class="timestamp" id="ticket-timestamp">
-                Vista previa - Ticket no generado
-            </div>
-        </div>
-    </div>
+               <div class="timestamp" id="ticket-timestamp">
+                   Vista previa - Ticket no generado
+               </div>
+           </div>
+       </div>
+       
+       <!-- HEADER CON LOGOUT -->
+       <div class="system-header">
+           <div class="user-info">
+               <span id="userEmail"></span>
+               <button onclick="handleLogout()" class="logout-btn">
+                   <i class="fas fa-sign-out-alt"></i> Cerrar Sesión
+               </button>
+           </div>
+       </div>
+   </div>
 
-    <!-- ===========================
-         SCRIPTS EN ORDEN CORRECTO
-         SOLUCIÓN AL CONFLICTO thermal-printer.js
-         =========================== -->
-    
-    <!-- 1. Sistema de alertas (base) -->
-    <script src="./js/alerts.js"></script>
-    
-    <!-- 2. Sistema de modales (depende de alertas) -->
-    <script src="./js/modal.js"></script>
-    
-    <!-- 3. Generador de PDF (depende de alertas) -->
-    <script src="./js/pdf-generator.js"></script>
-    
-    <!-- 4. Aplicación principal ANTES de thermal-printer -->
-    <script src="./js/app.js"></script>
-    
-    <!-- 5. Sistema de impresión térmica (DESPUÉS para evitar sobrescribir) -->
-    <script src="./js/thermal-printer.js"></script>
-    
-    <!-- 6. Sistema de autenticación (opcional) -->
-    <script src="./js/firebase-auth.js"></script>
+   <!-- ===========================
+        SCRIPTS EN ORDEN CORRECTO
+        =========================== -->
 
-    <!-- Script de resolución de conflictos y función principal de impresión -->
-    <script>
-        // ===========================
-        // 🔧 RESOLUCIÓN DE CONFLICTOS
-        // ===========================
-        
-        // Guardar referencia a la función original de app.js antes de que thermal-printer la sobrescriba
-        let originalPrintTicket = null;
-        
-        document.addEventListener('DOMContentLoaded', function() {
-            // Guardar la función printTicket de app.js
-            if (typeof printTicket !== 'undefined') {
-                originalPrintTicket = printTicket;
-            }
-            
-            // Esperar a que thermal-printer.js se cargue completamente
-            setTimeout(() => {
-                setupPrintFunction();
-                verifySystem();
-            }, 1500);
-        });
+   <!-- 1. Sistema de alertas (base) -->
+   <script src="./js/alerts.js"></script>
 
-        /**
-         * 🖨️ FUNCIÓN PRINCIPAL DE IMPRESIÓN (RESUELVE CONFLICTO)
-         * Esta función maneja ambos sistemas: modal y thermal-printer
-         */
-        function showPrintModal() {
-            // Verificar si el ticket está generado y es válido
-            if (!ticketGenerated || ticketCancelled) {
-                if (typeof showError !== 'undefined') {
-                    showError('Error de impresión', 'Debe generar un ticket válido antes de imprimir');
-                }
-                return;
-            }
+   <!-- 2. Sistema de autenticación PRIMERO -->
+   <script src="./js/firebase-auth.js"></script>
 
-            console.log('🖨️ Iniciando proceso de impresión...');
+   <!-- 3. Sistema de base de datos DESPUÉS de auth -->
+   <script src="./js/firebase-database.js"></script>
 
-            // Priorizar el modal si está disponible
-            if (typeof modalSystem !== 'undefined' && modalSystem.isInitialized) {
-                console.log('🎭 Usando sistema de modales');
-                modalSystem.showPrintOptionsModal();
-            } 
-            // Fallback a thermal-printer si no hay modal
-            else if (typeof thermalPrinter !== 'undefined') {
-                console.log('🖨️ Usando thermal-printer como fallback');
-                // Preguntar al usuario con confirm nativo
-                const useDirectPrint = confirm(
-                    'Seleccione método de impresión:\n\n' +
-                    'OK = Impresora Térmica/Directa\n' +
-                    'Cancelar = Generar PDF'
-                );
-                
-                if (useDirectPrint) {
-                    thermalPrinter.printThermalTicket();
-                } else {
-                    // Generar PDF
-                    if (typeof generateTicketPDF !== 'undefined') {
-                        generateTicketPDF('thermal');
-                    } else {
-                        alert('Generador de PDF no disponible');
-                    }
-                }
-            }
-            // Último recurso: función original de app.js
-            else if (originalPrintTicket) {
-                console.log('📄 Usando función original de app.js');
-                originalPrintTicket();
-            }
-            else {
-                console.error('❌ No hay sistemas de impresión disponibles');
-                if (typeof showError !== 'undefined') {
-                    showError('Error', 'No hay sistemas de impresión disponibles');
-                }
-            }
-        }
+   <!-- 4. Sistema de modales -->
+   <script src="./js/modal.js"></script>
 
-        /**
-         * Configurar la función de impresión correcta
-         */
-        function setupPrintFunction() {
-            // Sobrescribir cualquier función printTicket global con nuestra función unificada
-            window.printTicket = showPrintModal;
-            
-            console.log('🔧 Función de impresión unificada configurada');
-        }
+   <!-- 5. Generador de PDF -->
+   <script src="./js/pdf-generator.js"></script>
 
-        /**
-         * Verificar que todos los sistemas estén funcionando
-         */
-        function verifySystem() {
-            console.log('=================================');
-            console.log('🔍 VERIFICACIÓN DEL SISTEMA POS');
-            console.log('=================================');
-            
-            // Verificar sistemas principales
-            console.log('📢 Sistema de alertas:', typeof alertSystem !== 'undefined' ? '✅ OK' : '❌ ERROR');
-            console.log('🎭 Sistema de modales:', typeof modalSystem !== 'undefined' ? '✅ OK' : '❌ ERROR');
-            console.log('📄 Generador de PDF:', typeof pdfGenerator !== 'undefined' ? '✅ OK' : '❌ ERROR');
-            console.log('🖨️ Thermal Printer:', typeof thermalPrinter !== 'undefined' ? '✅ OK' : '❌ ERROR');
-            console.log('🔧 Función printTicket:', typeof printTicket !== 'undefined' ? '✅ OK' : '❌ ERROR');
-            
-            // Verificar integración modal
-            if (typeof modalSystem !== 'undefined' && modalSystem.isInitialized) {
-                console.log('🔗 Modal de impresión:', typeof modalSystem.showPrintOptionsModal === 'function' ? '✅ OK' : '❌ ERROR');
-            }
-            
-            // Estado final
-            console.log('=================================');
-            if (typeof modalSystem !== 'undefined' && typeof thermalPrinter !== 'undefined') {
-                console.log('🎯 SISTEMA HÍBRIDO ACTIVO');
-                console.log('   Modal + Thermal Printer disponibles');
-            } else if (typeof modalSystem !== 'undefined') {
-                console.log('🎭 SISTEMA MODAL ACTIVO');
-                console.log('   Solo modales disponibles');
-            } else if (typeof thermalPrinter !== 'undefined') {
-                console.log('🖨️ SISTEMA THERMAL ACTIVO');
-                console.log('   Solo thermal printer disponible');
-            }
-            console.log('✅ Sistema POS verificado y funcionando');
-            console.log('=================================');
-        }
+   <!-- 6. Aplicación principal -->
+   <script src="./js/app.js"></script>
 
-        // ===========================
-        // 🔗 FUNCIONES DE INTEGRACIÓN
-        // ===========================
+   <!-- 7. Sistema de impresión térmica -->
+   <script src="./js/thermal-printer.js"></script>
 
-        /**
-         * Función auxiliar para thermal-printer
-         */
-        window.directPrintFromThermal = function() {
-            if (typeof thermalPrinter !== 'undefined') {
-                thermalPrinter.printThermalTicket();
-            }
-        };
+   <!-- Script de inicialización mejorado -->
+   <script>
+       // ===========================
+       // 🔧 INICIALIZACIÓN MEJORADA
+       // ===========================
+       
+       let originalPrintTicket = null;
+       let systemReady = false;
+       
+       document.addEventListener('DOMContentLoaded', function() {
+           console.log('🚀 Iniciando sistema POS...');
+           
+           // Guardar función original antes de conflictos
+           if (typeof printTicket !== 'undefined') {
+               originalPrintTicket = printTicket;
+           }
+           
+           // Esperar a que todos los módulos se carguen
+           setTimeout(() => {
+               initializeCompleteSystem();
+           }, 3000); // Aumentar tiempo de espera para Firebase
+       });
 
-        /**
-         * Función auxiliar para PDF desde modal
-         */
-        window.generatePDFFromModal = function(format = 'thermal') {
-            if (typeof generateTicketPDF !== 'undefined') {
-                return generateTicketPDF(format);
-            } else if (typeof pdfGenerator !== 'undefined') {
-                return pdfGenerator.generateTicketPDF(format);
-            } else {
-                console.error('❌ Generador de PDF no disponible');
-                return false;
-            }
-        };
+       /**
+        * Inicialización completa del sistema con verificaciones mejoradas
+        */
+       async function initializeCompleteSystem() {
+           console.log('🔧 Inicializando sistema completo...');
+           
+           let dbReady = false;
+           let authReady = false;
+           let alertsReady = false;
+           let modalsReady = false;
+           
+           // Verificar Firebase Database con reintentos
+           console.log('🔍 Verificando Firebase Database...');
+           for (let i = 0; i < 50; i++) { // 50 intentos = 5 segundos
+               if (typeof window.firebaseDatabase !== 'undefined') {
+                   console.log(`🔄 Firebase Database encontrado, verificando inicialización... (intento ${i + 1})`);
+                   if (window.firebaseDatabase.isInitialized) {
+                       dbReady = true;
+                       console.log('✅ Firebase Database listo');
+                       break;
+                   }
+               }
+               await new Promise(resolve => setTimeout(resolve, 100));
+           }
+           
+           // Verificar Auth Manager
+           console.log('🔍 Verificando Auth Manager...');
+           for (let i = 0; i < 30; i++) {
+               if (typeof window.authManager !== 'undefined' && window.authManager.isInitialized) {
+                   authReady = true;
+                   console.log('✅ Auth Manager listo');
+                   break;
+               }
+               await new Promise(resolve => setTimeout(resolve, 100));
+           }
+           
+           // Verificar otros componentes
+           alertsReady = typeof window.alertSystem !== 'undefined';
+           modalsReady = typeof window.modalSystem !== 'undefined';
+           
+           console.log('🔍 Estado final de componentes:');
+           console.log('  - Auth Manager:', authReady ? '✅' : '❌');
+           console.log('  - Firebase DB:', dbReady ? '✅' : '❌');
+           console.log('  - Alert System:', alertsReady ? '✅' : '❌');
+           console.log('  - Modal System:', modalsReady ? '✅' : '❌');
+           
+           // Verificar estado detallado de Firebase
+           if (typeof window.firebaseDatabase !== 'undefined') {
+               const dbStatus = window.firebaseDatabase.getConnectionStatus();
+               console.log('📊 Estado detallado Firebase:');
+               console.log('  - Inicializado:', dbStatus.isInitialized);
+               console.log('  - Conectado:', dbStatus.isConnected);
+               console.log('  - Reintentos:', dbStatus.retryAttempts + '/' + dbStatus.maxRetries);
+               
+               // Si no está conectado, intentar reconectar
+               if (dbStatus.isInitialized && !dbStatus.isConnected) {
+                   console.log('🔄 Intentando reconectar Firebase...');
+                   try {
+                       await window.firebaseDatabase.reconnect();
+                       console.log('✅ Reconexión exitosa');
+                   } catch (error) {
+                       console.error('❌ Error en reconexión:', error);
+                   }
+               }
+           }
+           
+           if (!authReady) {
+               console.error('❌ Auth Manager no disponible - Sistema no funcional');
+               if (alertsReady) {
+                   window.alertSystem.error('Error crítico', 'Sistema de autenticación no disponible');
+               }
+               return;
+           }
+           
+           if (!dbReady) {
+               console.warn('⚠️ Firebase Database no disponible - Funcionalidad limitada');
+               if (alertsReady) {
+                   window.alertSystem.warning('Advertencia', 'Base de datos no disponible - Funcionalidad limitada');
+               }
+           }
+           
+           // Configurar función de impresión
+           setupPrintFunction();
+           
+           systemReady = true;
+           console.log('✅ Sistema POS inicializado completamente');
+           
+           if (alertsReady) {
+               if (dbReady && authReady) {
+                   window.alertSystem.success('Sistema listo', 'POS inicializado con todas las funcionalidades');
+               } else {
+                   window.alertSystem.info('Sistema parcial', 'POS inicializado con funcionalidad limitada');
+               }
+           }
+       }
 
-        /**
-         * Función auxiliar para impresión directa desde modal
-         */
-        window.directPrintFromModal = function() {
-            // Priorizar thermal printer si está disponible
-            if (typeof thermalPrinter !== 'undefined') {
-                thermalPrinter.printThermalTicket();
-            } 
-            // Fallback a función original
-            else if (originalPrintTicket) {
-                originalPrintTicket();
-            }
-            // Último recurso: función de app.js
-            else if (typeof directPrint !== 'undefined') {
-                directPrint();
-            }
-            else {
-                console.error('❌ No hay métodos de impresión directa disponibles');
-            }
-        };
-    </script>
+       /**
+        * Configurar función de impresión unificada
+        */
+       function setupPrintFunction() {
+           window.printTicket = showPrintModal;
+           window.showPrintModal = showPrintModal;
+           console.log('🔧 Función de impresión unificada configurada');
+       }
+
+       /**
+        * Función principal de impresión
+        */
+       function showPrintModal() {
+           if (!ticketGenerated || ticketCancelled) {
+               if (typeof showError !== 'undefined') {
+                   showError('Error de impresión', 'Debe generar un ticket válido antes de imprimir');
+               }
+               return;
+           }
+
+           console.log('🖨️ Iniciando proceso de impresión...');
+
+           if (typeof modalSystem !== 'undefined' && modalSystem.isInitialized) {
+               console.log('🎭 Usando sistema de modales');
+               modalSystem.showPrintOptionsModal();
+           } else if (typeof thermalPrinter !== 'undefined') {
+               console.log('🖨️ Usando thermal printer como fallback');
+               const useDirectPrint = confirm(
+                   'Seleccione método de impresión:\n\n' +
+                   'OK = Impresora Térmica/Directa\n' +
+                   'Cancelar = Generar PDF'
+               );
+               
+               if (useDirectPrint) {
+                   thermalPrinter.printThermalTicket();
+               } else if (typeof generateTicketPDF !== 'undefined') {
+                   generateTicketPDF('thermal');
+               } else {
+                   alert('Generador de PDF no disponible');
+               }
+           } else if (originalPrintTicket) {
+               console.log('📄 Usando función original de app.js');
+               originalPrintTicket();
+           } else {
+               console.error('❌ No hay sistemas de impresión disponibles');
+               if (typeof showError !== 'undefined') {
+                   showError('Error', 'No hay sistemas de impresión disponibles');
+               }
+           }
+       }
+
+       // ===========================
+       // 🔗 FUNCIONES DE INTEGRACIÓN
+       // ===========================
+
+       /**
+        * Función auxiliar para impresión directa desde modal
+        */
+       window.directPrintFromModal = function() {
+           if (typeof thermalPrinter !== 'undefined') {
+               thermalPrinter.printThermalTicket();
+           } else if (originalPrintTicket) {
+               originalPrintTicket();
+           } else if (typeof directPrint !== 'undefined') {
+               directPrint();
+           } else {
+               console.error('❌ No hay métodos de impresión directa disponibles');
+           }
+       };
+
+       /**
+        * Función auxiliar para PDF desde modal
+        */
+       window.generatePDFFromModal = function(format = 'thermal') {
+           if (typeof generateTicketPDF !== 'undefined') {
+               return generateTicketPDF(format);
+           } else if (typeof pdfGenerator !== 'undefined') {
+               return pdfGenerator.generateTicketPDF(format);
+           } else {
+               console.error('❌ Generador de PDF no disponible');
+               return false;
+           }
+       };
+
+       /**
+        * Función de diagnóstico del sistema
+        */
+       window.diagnosticSystem = function() {
+           console.log('🔍 DIAGNÓSTICO DEL SISTEMA POS');
+           console.log('================================');
+           
+           const components = [
+               { name: 'Auth Manager', obj: window.authManager, ready: window.authManager?.isInitialized },
+               { name: 'Firebase DB', obj: window.firebaseDatabase, ready: window.firebaseDatabase?.isInitialized },
+               { name: 'Alert System', obj: window.alertSystem, ready: !!window.alertSystem },
+               { name: 'Modal System', obj: window.modalSystem, ready: window.modalSystem?.isInitialized },
+               { name: 'PDF Generator', obj: window.pdfGenerator, ready: window.pdfGenerator?.isInitialized },
+               { name: 'Thermal Printer', obj: window.thermalPrinter, ready: window.thermalPrinter?.isInitialized }
+           ];
+           
+           components.forEach(comp => {
+               const status = comp.obj ? (comp.ready ? '✅ LISTO' : '⚠️ CARGADO') : '❌ NO DISPONIBLE';
+               console.log(`  - ${comp.name}: ${status}`);
+           });
+           
+           if (window.firebaseDatabase) {
+               const dbStatus = window.firebaseDatabase.getConnectionStatus();
+               console.log('📊 Estado Firebase:');
+               console.log(`  - Inicializado: ${dbStatus.isInitialized ? '✅' : '❌'}`);
+               console.log(`  - Conectado: ${dbStatus.isConnected ? '✅' : '❌'}`);
+               console.log(`  - Reintentos: ${dbStatus.retryAttempts}/${dbStatus.maxRetries}`);
+           }
+           
+           console.log('================================');
+           return components;
+       };
+
+       /**
+        * Función para probar Firebase manualmente
+        */
+       window.testFirebase = async function() {
+           if (typeof window.firebaseDatabase === 'undefined') {
+               console.error('❌ Firebase Database no disponible');
+               return false;
+           }
+           
+           console.log('🧪 Probando Firebase Database...');
+           return await window.firebaseDatabase.testConnection();
+       };
+
+       /**
+        * Función para reconectar Firebase manualmente
+        */
+       window.reconnectFirebase = async function() {
+           if (typeof window.firebaseDatabase === 'undefined') {
+               console.error('❌ Firebase Database no disponible');
+               return false;
+           }
+           
+           console.log('🔄 Reconectando Firebase...');
+           try {
+               await window.firebaseDatabase.reconnect();
+               console.log('✅ Reconexión exitosa');
+               return true;
+           } catch (error) {
+               console.error('❌ Error en reconexión:', error);
+               return false;
+           }
+       };
+   </script>
 
 </body>
 </html>

@@ -984,54 +984,257 @@ function setupFieldValidation() {
   });
 }
 
-// FUNCIÓN MODIFICADA PARA GENERAR TICKET CON VALIDACIÓN
+
 function generateTicketWithValidation() {
-  const nombre = document.getElementById("nombre").value;
-  const documento = document.getElementById("documento").value;
-  const fecha = document.getElementById("fecha").value;
+    // Verificar autenticación primero
+    if (typeof window.authManager === 'undefined' || !window.authManager.isUserAuthenticated()) {
+        showError('Acceso denegado', 'Debe iniciar sesión para generar tickets');
+        return false;
+    }
 
-  // Validar campos obligatorios
-  if (!nombre || !documento || !selectedVessel || !fecha) {
-    showError('Datos incompletos', 'Complete todos los campos obligatorios: Nombre, Documento, Embarcación y Fecha');
-    return;
-  }
+    const nombre = document.getElementById("nombre").value;
+    const documento = document.getElementById("documento").value;
+    const fecha = document.getElementById("fecha").value;
 
-  // Validar formato de campos opcionales
-  const validation = validateForm();
-  if (!validation.isValid) {
-    showValidationErrors(validation.errors);
-    return;
-  }
+    // Validar campos obligatorios
+    if (!nombre || !documento || !selectedVessel || !fecha) {
+        showError('Datos incompletos', 'Complete todos los campos obligatorios: Nombre, Documento, Embarcación y Fecha');
+        return false;
+    }
 
-  if (ticketCancelled) {
-    showError('Error', 'No se puede generar un ticket anulado');
-    return;
-  }
+    // Validar formato de campos opcionales
+    const validation = validateForm();
+    if (!validation.isValid) {
+        showValidationErrors(validation.errors);
+        return false;
+    }
 
-  try {
-    // Generar timestamp
-    const now = new Date();
-    document.getElementById("ticket-timestamp").textContent = 
-      `Generado: ${now.toLocaleDateString('es-CO')} ${now.toLocaleTimeString('es-CO')}`;
+    if (ticketCancelled) {
+        showError('Error', 'No se puede generar un ticket anulado');
+        return false;
+    }
 
-    // Generar QR Code
-    generateQRCode();
-    
-    // Actualizar estados
-    ticketGenerated = true;
-    ticketPrinted = false;
-    
-    // Actualizar interfaz
-    updateButtonStates();
-    updateTicketStatus(TICKET_STATES.GENERATED);
-    
-    showSuccess("¡Ticket generado!", "El ticket se ha creado exitosamente");
-    
-  } catch (error) {
-    console.error('Error generando ticket:', error);
-    showError('Error del sistema', 'No se pudo generar el ticket. Intente nuevamente');
-  }
+    try {
+        // Preparar datos del ticket para confirmación
+        const ticketData = {
+            nombre: nombre,
+            documento: documento,
+            telefono: document.getElementById("telefono").value || '',
+            email: document.getElementById("emailCliente").value || '',
+            fecha: fecha,
+            hora: new Date().toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit', hour12: false }),
+            embarcacion: selectedVessel.charAt(0).toUpperCase() + selectedVessel.slice(1),
+            adultos: parseInt(document.getElementById("adultos").value) || 0,
+            ninos: parseInt(document.getElementById("ninos").value) || 0,
+            total: document.getElementById("ticket-total").textContent || '$0',
+            tipo_servicio: isReservation ? 'Con Reserva' : 'Nuevo Pasaje'
+        };
+
+        // Mostrar modal de confirmación
+        if (typeof modalSystem !== 'undefined' && modalSystem.isInitialized) {
+            modalSystem.showSaleConfirmationModal(
+                ticketData,
+                () => processSale(ticketData), // Confirmar
+                () => modalSystem.closeModal() // Cancelar
+            );
+        } else {
+            // Fallback sin modal
+            if (confirm(`¿Confirmar venta?\n\nPasajero: ${ticketData.nombre}\nTotal: ${ticketData.total}`)) {
+                processSale(ticketData);
+            }
+        }
+
+    } catch (error) {
+        console.error('Error preparando venta:', error);
+        showError('Error del sistema', 'No se pudo preparar la venta');
+        return false;
+    }
 }
+
+
+  /**
+   * Procesar la venta confirmada con verificaciones mejoradas
+   */
+  async function processSale(ticketData) {
+      let saveAttempted = false;
+      let saveSuccessful = false;
+      
+      try {
+          showInfo('Verificando sistema...', 'Comprobando conexiones');
+
+          // VERIFICACIÓN 1: Sistema de autenticación
+          if (typeof window.authManager === 'undefined' || !window.authManager.isUserAuthenticated()) {
+              throw new Error('Usuario no autenticado');
+          }
+
+          // VERIFICACIÓN 2: Sistema de base de datos
+          if (typeof window.firebaseDatabase === 'undefined') {
+              throw new Error('Sistema de base de datos no cargado');
+          }
+
+          // VERIFICACIÓN 3: Estado de conexión
+          const dbStatus = window.firebaseDatabase.getConnectionStatus();
+          console.log('🔍 Estado de base de datos:', dbStatus);
+
+          if (!dbStatus.isInitialized) {
+              showInfo('Inicializando base de datos...', 'Conectando con Firebase');
+              
+              // Esperar hasta 5 segundos para inicialización
+              let waitCount = 0;
+              while (!window.firebaseDatabase.isInitialized && waitCount < 50) {
+                  await new Promise(resolve => setTimeout(resolve, 100));
+                  waitCount++;
+              }
+
+              if (!window.firebaseDatabase.isInitialized) {
+                  throw new Error('Base de datos no se pudo inicializar');
+              }
+          }
+
+          if (!dbStatus.isConnected) {
+              showInfo('Conectando...', 'Estableciendo conexión con Firebase');
+              await window.firebaseDatabase.reconnect();
+              
+              // Verificar nuevamente
+              const newStatus = window.firebaseDatabase.getConnectionStatus();
+              if (!newStatus.isConnected) {
+                  throw new Error('No se pudo establecer conexión con Firebase');
+              }
+          }
+
+          showInfo('Procesando venta...', 'Generando ticket y guardando datos');
+
+          // Generar timestamp
+          const now = new Date();
+          document.getElementById("ticket-timestamp").textContent = 
+              `Generado: ${now.toLocaleDateString('es-CO')} ${now.toLocaleTimeString('es-CO')}`;
+
+          // Actualizar campos del ticket en el DOM
+          document.getElementById("ticket-hora").textContent = ticketData.hora;
+
+          // Generar QR Code
+          generateQRCode();
+          
+          // INTENTAR GUARDAR EN FIREBASE
+          try {
+              saveAttempted = true;
+              showInfo('Guardando venta...', 'Enviando datos a Firebase');
+              
+              // Preparar datos para Firebase
+              const firebaseData = {
+                  codigo: currentTicketCode,
+                  nombre: ticketData.nombre,
+                  documento: ticketData.documento,
+                  telefono: ticketData.telefono,
+                  email: ticketData.email,
+                  fecha: ticketData.fecha,
+                  hora: ticketData.hora,
+                  embarcacion: ticketData.embarcacion,
+                  adultos: ticketData.adultos,
+                  ninos: ticketData.ninos,
+                  precio: extractPriceFromTotal(ticketData.total),
+                  tipo_servicio: ticketData.tipo_servicio,
+                  estado: 'GENERADO',
+                  usuario: window.authManager.getCurrentUser()?.email || 'unknown',
+                  timestamp_generacion: now.toISOString()
+              };
+
+              console.log('📤 Enviando datos a Firebase:', firebaseData);
+
+              // Guardar en Firebase
+              const docId = await window.firebaseDatabase.saveVenta(firebaseData);
+              
+              if (docId) {
+                  saveSuccessful = true;
+                  console.log('✅ Venta guardada exitosamente con ID:', docId);
+                  
+                  // MARCAR COMO EXITOSO
+                  ticketGenerated = true;
+                  updateButtonStates();
+                  updateTicketStatus(TICKET_STATES.GENERATED);
+                  
+                  // Cerrar modal
+                  if (typeof modalSystem !== 'undefined') {
+                      modalSystem.closeModal();
+                  }
+                  
+                  // Mostrar confirmación con verificación
+                  showSuccess(
+                      "¡Venta registrada!", 
+                      `Ticket ${currentTicketCode} guardado exitosamente (ID: ${docId.substring(0, 8)}...)`
+                  );
+
+                  // Verificar que realmente se guardó
+                  setTimeout(async () => {
+                      try {
+                          const verification = await window.firebaseDatabase.searchTicketByCodigo(currentTicketCode);
+                          if (verification) {
+                              console.log('✅ Verificación exitosa: ticket encontrado en base de datos');
+                              showInfo('Verificación exitosa', 'Ticket confirmado en base de datos');
+                          } else {
+                              console.warn('⚠️ Advertencia: ticket no encontrado en verificación');
+                          }
+                      } catch (verifyError) {
+                          console.warn('⚠️ No se pudo verificar el guardado:', verifyError);
+                      }
+                  }, 2000);
+                  
+                  return true;
+              } else {
+                  throw new Error('No se recibió ID de documento de Firebase');
+              }
+              
+          } catch (firebaseError) {
+              console.error('❌ Error guardando en Firebase:', firebaseError);
+              throw firebaseError;
+          }
+          
+      } catch (error) {
+          console.error('❌ Error procesando venta:', error);
+          
+          // Determinar tipo de error y mostrar mensaje apropiado
+          let errorTitle = 'Error de procesamiento';
+          let errorMessage = `No se pudo completar la venta: ${error.message}`;
+          
+          if (error.message.includes('no cargado')) {
+              errorTitle = 'Error del sistema';
+              errorMessage = 'El sistema de base de datos no está disponible. Refresque la página y reintente.';
+          } else if (error.message.includes('no autenticado')) {
+              errorTitle = 'Error de autenticación';
+              errorMessage = 'Debe iniciar sesión para realizar ventas';
+          } else if (error.message.includes('conexión') || error.message.includes('inicializar')) {
+              errorTitle = 'Error de conexión';
+              errorMessage = 'No se pudo conectar con la base de datos. Verifique su internet y reintente.';
+          } else if (saveAttempted && !saveSuccessful) {
+              errorTitle = 'Error de guardado';
+              
+              if (error.message.includes('permission') || error.message.includes('auth')) {
+                  errorMessage = 'Error de permisos. Verifique que esté logueado correctamente.';
+              } else if (error.message.includes('network') || error.message.includes('offline')) {
+                  errorMessage = 'Error de conexión. Verifique su internet y reintente.';
+              }
+          }
+          
+          showError(errorTitle, errorMessage);
+          
+          // NO marcar el ticket como generado si falló
+          ticketGenerated = false;
+          updateButtonStates();
+          updateTicketStatus(TICKET_STATES.DRAFT);
+          
+          return false;
+      }
+  }
+
+  /**
+   * Función auxiliar para extraer precio numérico
+   */
+  function extractPriceFromTotal(totalText) {
+      const numbers = totalText.replace(/[^\d]/g, '');
+      return parseInt(numbers) || 0;
+  }
+
+
 
 // ===========================
 // 🔗 FUNCIONES DE INTEGRACIÓN CON MODALES
@@ -1056,5 +1259,169 @@ window.generatePDFFromModal = function(format = 'thermal') {
     } else {
         showError('PDF no disponible', 'El generador de PDF no está cargado');
     }
+};
 
+/**
+ * =====================================================================================================================
+ * =====================================================================================================================
+ * =====================================================================================================================
+ * 🔍 VERIFICACIONES DE GUARDADO
+ * ===========================
+ */
+
+/**
+ * Verificar estado de guardado
+ */
+async function verifyTicketSaved(ticketCode) {
+    if (!ticketCode || typeof window.firebaseDatabase === 'undefined') {
+        return false;
+    }
+
+    try {
+        console.log('🔍 Verificando si el ticket está guardado:', ticketCode);
+        const ticket = await window.firebaseDatabase.searchTicketByCodigo(ticketCode);
+        
+        if (ticket) {
+            console.log('✅ Ticket encontrado en base de datos:', ticket);
+            return true;
+        } else {
+            console.log('❌ Ticket NO encontrado en base de datos');
+            return false;
+        }
+    } catch (error) {
+        console.error('❌ Error verificando ticket:', error);
+        return false;
+    }
+}
+
+/**
+ * Mostrar estado de guardado en tiempo real
+ */
+function showSaveStatus(success, details = {}) {
+    const statusElement = document.getElementById('save-status') || createSaveStatusElement();
+    
+    if (success) {
+        statusElement.innerHTML = `
+            <i class="fas fa-check-circle" style="color: #10b981;"></i>
+            <span>Guardado en Firebase</span>
+            <small>ID: ${details.id || 'N/A'}</small>
+        `;
+        statusElement.className = 'save-status success';
+    } else {
+        statusElement.innerHTML = `
+            <i class="fas fa-exclamation-triangle" style="color: #ef4444;"></i>
+            <span>Error de guardado</span>
+            <small>${details.error || 'Error desconocido'}</small>
+        `;
+        statusElement.className = 'save-status error';
+    }
+    
+    // Auto-ocultar después de 5 segundos si es exitoso
+    if (success) {
+        setTimeout(() => {
+            statusElement.style.opacity = '0.5';
+        }, 5000);
+    }
+}
+
+/**
+ * Crear elemento de estado de guardado
+ */
+function createSaveStatusElement() {
+    const statusElement = document.createElement('div');
+    statusElement.id = 'save-status';
+    statusElement.className = 'save-status';
+    
+    // Buscar dónde insertarlo (después del timestamp del ticket)
+    const timestampElement = document.getElementById('ticket-timestamp');
+    if (timestampElement && timestampElement.parentNode) {
+        timestampElement.parentNode.insertBefore(statusElement, timestampElement.nextSibling);
+    }
+    
+    return statusElement;
+}
+
+/**
+ * ===========================
+ * 🔧 FUNCIONES DE DIAGNÓSTICO
+ * ===========================
+ */
+
+/**
+ * Diagnóstico completo del sistema
+ */
+window.diagnosticSystem = function() {
+    console.log('🔍 DIAGNÓSTICO DEL SISTEMA POS');
+    console.log('================================');
+    
+    // Verificar módulos principales
+    console.log('📦 MÓDULOS:');
+    console.log('  - alertSystem:', typeof window.alertSystem !== 'undefined' ? '✅' : '❌');
+    console.log('  - authManager:', typeof window.authManager !== 'undefined' ? '✅' : '❌');
+    console.log('  - firebaseDatabase:', typeof window.firebaseDatabase !== 'undefined' ? '✅' : '❌');
+    console.log('  - modalSystem:', typeof window.modalSystem !== 'undefined' ? '✅' : '❌');
+    console.log('  - pdfGenerator:', typeof window.pdfGenerator !== 'undefined' ? '✅' : '❌');
+    
+    // Verificar Firebase Database específicamente
+    if (typeof window.firebaseDatabase !== 'undefined') {
+        const status = window.firebaseDatabase.getConnectionStatus();
+        console.log('🔥 FIREBASE DATABASE:');
+        console.log('  - Inicializado:', status.isInitialized ? '✅' : '❌');
+        console.log('  - Conectado:', status.isConnected ? '✅' : '❌');
+        console.log('  - Intentos de reconexión:', status.retryAttempts + '/' + status.maxRetries);
+    } else {
+        console.log('🔥 FIREBASE DATABASE: ❌ NO DISPONIBLE');
+    }
+    
+    // Verificar autenticación
+    if (typeof window.authManager !== 'undefined') {
+        console.log('🔐 AUTENTICACIÓN:');
+        console.log('  - Usuario logueado:', window.authManager.isUserAuthenticated() ? '✅' : '❌');
+        if (window.authManager.getCurrentUser()) {
+            console.log('  - Email:', window.authManager.getCurrentUser().email);
+        }
+    }
+    
+    console.log('================================');
+    
+    // Mostrar resultado en pantalla también
+    const modules = [
+        { name: 'Alertas', available: typeof window.alertSystem !== 'undefined' },
+        { name: 'Autenticación', available: typeof window.authManager !== 'undefined' },
+        { name: 'Base de datos', available: typeof window.firebaseDatabase !== 'undefined' },
+        { name: 'Modales', available: typeof window.modalSystem !== 'undefined' }
+    ];
+    
+    const available = modules.filter(m => m.available).length;
+    const total = modules.length;
+    
+    if (available === total) {
+        showSuccess('Sistema completo', `Todos los módulos están disponibles (${available}/${total})`);
+    } else {
+        showWarning('Sistema incompleto', `Solo ${available}/${total} módulos disponibles`);
+    }
+};
+
+/**
+ * Forzar reconexión de Firebase
+ */
+window.forceReconnectFirebase = async function() {
+    if (typeof window.firebaseDatabase === 'undefined') {
+        showError('Error', 'Sistema de base de datos no disponible');
+        return;
+    }
+    
+    try {
+        showInfo('Reconectando...', 'Reestableciendo conexión con Firebase');
+        await window.firebaseDatabase.reconnect();
+        
+        const status = window.firebaseDatabase.getConnectionStatus();
+        if (status.isConnected) {
+            showSuccess('Reconectado', 'Conexión con Firebase reestablecida');
+        } else {
+            showError('Error de reconexión', 'No se pudo reestablecer la conexión');
+        }
+    } catch (error) {
+        showError('Error de reconexión', error.message);
+    }
 };

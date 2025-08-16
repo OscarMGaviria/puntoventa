@@ -437,6 +437,99 @@ class ModalSystem {
     this.showModal(modal);
   }
 
+
+  /**
+   * ===========================
+   * 🛒 MODAL DE CONFIRMACIÓN DE VENTA
+   * ===========================
+   */
+  showSaleConfirmationModal(ticketData, onConfirm, onCancel) {
+      const total = ticketData.total || '$0';
+      const pasajeros = `${ticketData.adultos} adultos${ticketData.ninos > 0 ? `, ${ticketData.ninos} niños` : ''}`;
+      
+      const modal = this.createModal("sale-confirmation", {
+          icon: '<i class="fas fa-shopping-cart"></i>',
+          iconClass: 'success-icon',
+          title: "Confirmar Venta",
+          subtitle: "Verificar datos antes de procesar",
+          message: `
+              <div style="text-align: left; background: rgba(255,255,255,0.1); padding: 15px; border-radius: 10px; margin: 15px 0;">
+                  <div style="margin-bottom: 8px;"><strong>Pasajero:</strong> ${ticketData.nombre}</div>
+                  <div style="margin-bottom: 8px;"><strong>Documento:</strong> ${ticketData.documento}</div>
+                  <div style="margin-bottom: 8px;"><strong>Embarcación:</strong> ${ticketData.embarcacion}</div>
+                  <div style="margin-bottom: 8px;"><strong>Fecha:</strong> ${ticketData.fecha}</div>
+                  <div style="margin-bottom: 8px;"><strong>Pasajeros:</strong> ${pasajeros}</div>
+                  <div style="margin-bottom: 8px; font-size: 1.2em; color: #00ff88;"><strong>Total: ${total}</strong></div>
+              </div>
+              <p style="color: rgba(255,255,255,0.8); font-size: 0.9em;">¿Confirma el registro de esta venta?</p>
+          `,
+          actions: [
+              {
+                  text: '<i class="fas fa-times"></i> Cancelar',
+                  type: "danger",
+                  action: onCancel || (() => this.closeModal()),
+              },
+              {
+                  text: '<i class="fas fa-check"></i> Confirmar Venta',
+                  type: "primary",
+                  action: onConfirm || (() => this.closeModal()),
+              }
+          ],
+          animation: "normal",
+      });
+
+      this.showModal(modal);
+}
+
+
+  /**
+   * ===========================
+   * ✅ MODAL DE RESULTADO DE VENTA
+   * ===========================
+   */
+  showSaleResultModal(success, details) {
+      const modal = this.createModal("sale-result", {
+          icon: success ? '<i class="fas fa-check-circle"></i>' : '<i class="fas fa-exclamation-triangle"></i>',
+          iconClass: success ? 'success-icon' : 'error-icon',
+          title: success ? "¡Venta Exitosa!" : "Error en Venta",
+          subtitle: success ? "Registro completado" : "No se pudo completar",
+          message: `
+              <div style="text-align: center; padding: 15px;">
+                  ${success ? 
+                      `<div style="color: #00ff88; margin-bottom: 15px;">
+                          <i class="fas fa-database" style="font-size: 2em;"></i>
+                      </div>
+                      <p>La venta se ha guardado correctamente en la base de datos.</p>
+                      <div style="background: rgba(0,255,136,0.1); padding: 10px; border-radius: 8px; margin: 10px 0;">
+                          <strong>Código:</strong> ${details.codigo}<br>
+                          <strong>ID Base de datos:</strong> ${details.firebaseId}
+                      </div>` 
+                      : 
+                      `<div style="color: #ff6b6b; margin-bottom: 15px;">
+                          <i class="fas fa-exclamation-circle" style="font-size: 2em;"></i>
+                      </div>
+                      <p>No se pudo guardar la venta en la base de datos.</p>
+                      <div style="background: rgba(255,107,107,0.1); padding: 10px; border-radius: 8px; margin: 10px 0;">
+                          <strong>Error:</strong> ${details.error}
+                      </div>`
+                  }
+              </div>
+          `,
+          actions: [
+              {
+                  text: success ? '<i class="fas fa-check"></i> Continuar' : '<i class="fas fa-redo"></i> Reintentar',
+                  type: success ? "primary" : "warning",
+                  action: () => this.closeModal(),
+              }
+          ],
+          autoClose: success ? 4000 : null,
+          animation: "normal",
+      });
+
+      this.showModal(modal);
+  }
+
+
   /**
    * Manejar impresión directa
    */

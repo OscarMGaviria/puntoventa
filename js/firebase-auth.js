@@ -20,6 +20,14 @@ class AuthManager {
         this.userEmail = null;
         
         this.init();
+        
+        // AGREGAR ESTAS LÍNEAS:
+        // Integrar con Firebase Database si está disponible
+        setTimeout(() => {
+            if (typeof window.firebaseDatabase !== 'undefined') {
+                console.log('🔗 Firebase Auth integrado con Firebase Database');
+            }
+        }, 2000);
     }
 
     /**
@@ -29,12 +37,12 @@ class AuthManager {
         try {
             // Configuración de Firebase
             const firebaseConfig = {
-                apiKey: "AIzaSyDdjYoi4BSBFFAuXumLxj-NMQWUVSFdSv4",
-                authDomain: "contratos-5e932.firebaseapp.com",
-                projectId: "contratos-5e932",
-                storageBucket: "contratos-5e932.firebasestorage.app",
-                messagingSenderId: "945849105278",
-                appId: "1:945849105278:web:f0291a411b8e33327a112f"
+                apiKey: "AIzaSyBIYiRIRqaxjMKv1IzM--KM6mBNiOoS7DE",
+                authDomain: "muelle-guatape.firebaseapp.com",
+                projectId: "muelle-guatape",
+                storageBucket: "muelle-guatape.firebasestorage.app",
+                messagingSenderId: "527376761734",
+                appId: "1:527376761734:web:e229d7725ad323182a6207"
             };
 
             // Importar Firebase
@@ -166,6 +174,21 @@ class AuthManager {
             this.showLoading(false);
         }
     }
+
+    /**
+     * Obtener usuario actual para el sistema
+     */
+    getCurrentUserForSystem() {
+        return this.user;
+    }
+
+    /**
+     * Verificar si está autenticado
+     */
+    isUserAuthenticated() {
+        return this.user !== null;
+    }
+
 
     /**
      * Cerrar sesión
